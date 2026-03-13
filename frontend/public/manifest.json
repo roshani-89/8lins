@@ -1,0 +1,58 @@
+{
+  "name": "8-Lines Group — Corporate Mobility",
+  "short_name": "8-Lines",
+  "description": "Bengaluru's premier asset-light corporate fleet. Book a premium drive or deploy your asset for 70% passive income.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#FFFFFF",
+  "theme_color": "#0C1D36",
+  "categories": ["finance", "travel", "business"],
+  "lang": "en-IN",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Book a Drive",
+      "short_name": "Book Drive",
+      "description": "Browse the 8-Lines fleet",
+      "url": "/fleet",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Investor Dashboard",
+      "short_name": "Dashboard",
+      "description": "View your asset portfolio",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Mechanix Pro",
+      "short_name": "Mechanix",
+      "description": "Run a vehicle audit",
+      "url": "/admin",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-wide.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "8-Lines Homepage"
+    },
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "8-Lines Investor Dashboard"
+    }
+  ],
+  "icons": [
+    { "src": "/icon-192.png",  "sizes": "192x192",  "type": "image/png", "purpose": "maskable any" },
+    { "src": "/icon-512.png",  "sizes": "512x512",  "type": "image/png", "purpose": "maskable any" }
+  ]
+}
