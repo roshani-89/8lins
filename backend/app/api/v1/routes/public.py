@@ -73,3 +73,31 @@ def submit_onboarding(req: OnboardingCreate, request: Request, db: Session = Dep
         print(f"Contract automation failed: {e}")
 
     return {"message": "Onboarding submitted. Check your email for the Master Agreement.", "id": onboarding.id}
+
+@router.post("/onboarding/{id}/kyc")
+async def upload_onboarding_kyc(
+    id: str,
+    pan:     UploadFile = File(...),
+    aadhaar: UploadFile = File(...),
+    db:      Session = Depends(get_db)
+):
+    onboarding = db.query(Onboarding).filter(Onboarding.id == id).first()
+    if not onboarding:
+        raise HTTPException(404, "Onboarding record not found")
+
+    allowed = {"image/jpeg", "image/png", "application/pdf"}
+    for f in [pan, aadhaar]:
+        if f.content_type not in allowed:
+            raise HTTPException(400, f"Invalid file type: {f.content_type}")
+
+    pan_content     = await pan.read()
+    aadhaar_content = await aadhaar.read()
+
+    pan_key     = f"onboarding/{id}/pan/{pan.filename}"
+    aadhaar_key = f"onboarding/{id}/aadhaar/{aadhaar.filename}"
+
+    onboarding.pan_s3_key     = upload_to_s3(pan_content, pan_key, pan.content_type)
+    onboarding.aadhaar_s3_key = upload_to_s3(aadhaar_content, aadhaar_key, aadhaar.content_type)
+    
+    db.commit()
+    return {"message": "Documents uploaded successfully."}

@@ -1,4 +1,4 @@
 @echo off
 cd /d d:\version6car\8lines\backend
-C:\Users\dell\AppData\Local\Programs\Python\Python312\python.exe -m pip install --upgrade setuptools -q
-C:\Users\dell\AppData\Local\Programs\Python\Python312\python.exe -m uvicorn main:app --port 8000
+.\venv\Scripts\python.exe -m pip install setuptools==69.5.1 -q
+.\venv\Scripts\python.exe -m uvicorn main:app --reload --port 8000

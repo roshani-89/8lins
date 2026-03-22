@@ -5,30 +5,42 @@ import { investorAPI } from '@/lib/api'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import type { InvestorStats, Trip } from '@/types'
+import { DynamicLogo } from '@/components/ui/Logos'
+
 
 const NAV = [
-  {id:'overview',  icon:'◉',  label:'Overview'},
-  {id:'ledger',    icon:'≡',  label:'Ledger'},
-  {id:'fleet',     icon:'⊞',  label:'My Fleet'},
-  {id:'calendar',  icon:'⊡',  label:'Pause Calendar'},
-  {id:'tickets',   icon:'◫',  label:'IRM Tickets'},
-  {id:'tax',       icon:'↓',  label:'Tax Export'},
-  {id:'kyc',       icon:'⚷',  label:'KYC Vault'},
-  {id:'bank',      icon:'₹',  label:'Bank Details'},
-  {id:'documents', icon:'📁', label:'Document Vault'},
-  {id:'addasset',  icon:'+',  label:'Add Asset'},
+  {id:'overview',  icon:'◉',  label:'Overview', short:'Home'},
+  {id:'ledger',    icon:'≡',  label:'Ledger',   short:'Logs'},
+  {id:'fleet',     icon:'⊞',  label:'My Fleet', short:'Fleet'},
+  {id:'calendar',  icon:'⊡',  label:'Pause Calendar', short:'Pause'},
+  {id:'tickets',   icon:'◫',  label:'IRM Tickets', short:'IRM'},
+  {id:'tax',       icon:'↓',  label:'Tax Export', short:'Tax'},
+  {id:'kyc',       icon:'⚷',  label:'KYC Vault', short:'KYC'},
+  {id:'bank',      icon:'₹',  label:'Bank Details', short:'Bank'},
+  {id:'documents', icon:'📁', label:'Document Vault', short:'Docs'},
+  {id:'addasset',  icon:'+',  label:'Expand Portfolio', short:'Add'},
 ]
 
-function KpiCard({label,val,change,green=false}:{label:string;val:string;change:string;green?:boolean}) {
+const MARKET_DEMAND = [
+  {model:'Innova Crysta', demand:'+140%', trend:'up'},
+  {model:'Mahindra Thar', demand:'+115%', trend:'up'},
+  {model:'Toyota Fortuner', demand:'+95%', trend:'up'},
+  {model:'Kia Carnival', demand:'+60%', trend:'up'},
+]
+
+function KpiCard({label,val,change,green=false,orange=false}:{label:string;val:string;change:string;green?:boolean;orange?:boolean}) {
   return (
-    <div className="bg-void border border-navy/10 p-5 hover:border-green/20 transition-all group relative overflow-hidden shadow-sm">
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-green/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-      <div className="text-[8px] tracking-[2px] text-ash uppercase mb-3 font-bold">{label}</div>
-      <div className={`font-display text-3xl leading-none mb-2 ${green?'text-green glow-green':'text-navy'}`}>{val}</div>
-      <div className={`text-[9px] font-bold ${green?'text-green':'text-ash'}`}>{change}</div>
+    <div className={`bg-white border-l-4 ${green?'border-l-green':orange?'border-l-orange':'border-l-navy/20'} border border-navy/8 p-6 md:p-8 hover:shadow-lg transition-all duration-300 group relative overflow-hidden rounded-sm`}>
+      <div className="text-[11px] tracking-[3px] text-navy/40 uppercase mb-3 font-black">{label}</div>
+      <div className={`font-display text-3xl md:text-4xl leading-none mb-3 tracking-tight ${green?'text-green':orange?'text-orange':'text-navy'}`}>{val}</div>
+      <div className="flex items-center gap-2">
+        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${green?'bg-green animate-pulse':orange?'bg-orange animate-pulse':'bg-navy/20'}`} />
+        <span className="text-[11px] font-bold text-navy/40">{change}</span>
+      </div>
     </div>
   )
 }
+
 
 const MONTHS = ['Oct','Nov','Dec','Jan','Feb','Mar']
 const MOCK_YIELDS = [18400, 22100, 19800, 25600, 21300, 24800]
@@ -36,140 +48,304 @@ const MOCK_YIELDS = [18400, 22100, 19800, 25600, 21300, 24800]
 function MiniChart() {
   const max = Math.max(...MOCK_YIELDS)
   return (
-    <div className="flex items-end gap-2 h-20">
+    <div className="flex items-end gap-2 md:gap-3 h-28 pt-4">
       {MOCK_YIELDS.map((v,i)=>(
-        <div key={i} className="flex-1 flex flex-col items-center gap-1">
-          <div className="w-full bg-green/80 transition-all duration-700 hover:bg-green cursor-default group relative"
-            style={{height:`${(v/max)*100}%`, boxShadow:i===5?'0 0 12px rgba(18,51,43,.5)':'none', opacity:i===5?1:0.5}}>
-            <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-void border border-green/25 px-2 py-1 text-[8px] text-green whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+        <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
+          <div className="w-full bg-green/20 border-t border-green/30 transition-all duration-700 hover:bg-green hover:shadow-glow cursor-default relative"
+            style={{height:`${(v/max)*100}%`, opacity:i===5?1:0.6}}>
+            <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-navy border border-green/30 px-3 py-1.5 text-[10px] text-green font-black whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all pointer-events-none shadow-2xl z-20 cut-sm">
               ₹{v.toLocaleString('en-IN')}
             </div>
           </div>
-          <span className="text-[7px] text-fog">{MONTHS[i]}</span>
+          <span className="text-[9px] text-ash font-black uppercase tracking-tighter opacity-40 group-hover:opacity-100 transition-opacity">{MONTHS[i]}</span>
         </div>
       ))}
     </div>
   )
 }
 
-function OverviewTab({stats}:{stats:InvestorStats|null}) {
+function OverviewTab({stats, setTab}:{stats:InvestorStats|null, setTab: (t:string)=>void}) {
   if(!stats) return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-3">
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {[1,2,3].map(i=>(
-          <div key={i} className="bg-void border border-navy/5 p-5 animate-pulse">
-            <div className="h-2 bg-obsidian w-24 mb-3 rounded"/><div className="h-8 bg-obsidian w-32 mb-2 rounded"/><div className="h-2 bg-obsidian w-20 rounded"/>
+          <div key={i} className="bg-void border border-navy/5 p-8 animate-pulse shadow-sm">
+            <div className="h-2 bg-navy/5 w-24 mb-6 rounded"/><div className="h-12 bg-navy/5 w-40 mb-4 rounded"/><div className="h-2 bg-navy/5 w-28 rounded"/>
           </div>
         ))}
       </div>
-      <div className="bg-void border border-navy/5 p-8 text-center text-ash text-[11px] font-medium italic">Loading dashboard data...</div>
+      <div className="bg-void border border-navy/5 p-20 text-center text-ash text-[12px] font-black uppercase tracking-[4px] italic opacity-40 animate-pulse">Initializing Financial Protocol...</div>
     </div>
   )
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-3">
-        <KpiCard label="Locked-In Future Revenue" val={`₹${(stats.lockedRevenue||0).toLocaleString('en-IN')}`} change={`↑ ${stats.upcomingBookings||0} upcoming bookings`} green />
-        <KpiCard label="Next Payout Date" val={stats.nextPayoutDate||'15 Mar 2026'} change={`₹${(stats.nextPayoutAmount||0).toLocaleString('en-IN')} estimated`} />
-        <KpiCard label="This Month Net Yield" val={`₹${(stats.thisMonthNet||24800).toLocaleString('en-IN')}`} change="↑ +16.4% vs last month" green />
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-navy/8">
+        <div>
+          <div className="text-[12px] tracking-[3px] text-navy/30 uppercase font-black mb-1">INVESTOR DASHBOARD</div>
+          <h1 className="font-display text-3xl md:text-4xl text-navy uppercase tracking-tight">FINANCIAL OVERVIEW</h1>
+        </div>
+        <div className="flex items-center gap-3 bg-white border border-navy/8 px-4 py-3 shadow-sm rounded-sm">
+          <span className="w-2 h-2 rounded-full bg-green animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+          <span className="text-[12px] text-navy font-black uppercase tracking-wider">Live · March 2026</span>
+        </div>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-obsidian border border-green/8 p-5">
-          <div className="flex justify-between items-center mb-5">
-            <span className="text-[9px] tracking-[3px] text-ash uppercase">6-Month Yield Trend</span>
-            <span className="text-[8px] text-green border border-green/20 px-2 py-1">+34.8% 6M</span>
+
+      {/* Live Ticker */}
+      <div className="bg-navy py-3 px-4 overflow-hidden rounded-sm">
+         <div className="flex whitespace-nowrap animate-ticker scrollbar-none">
+            {[1,2,3].map(i => (
+              <div key={i} className="flex items-center gap-8 mr-8 shrink-0">
+                 <span className="text-[11px] tracking-[3px] text-white/30 font-black uppercase">// LIVE FEED</span>
+                 <span className="text-[11px] tracking-[3px] text-green font-black uppercase flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green animate-pulse"/>FORTUNER KA-05 · EARNED ₹2,450
+                 </span>
+                 <span className="text-[11px] tracking-[3px] text-orange font-black uppercase">HUB ALPHA: 94% UTILIZATION</span>
+              </div>
+            ))}
+         </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <KpiCard label="Locked Future Revenue" val={`₹${(stats.lockedRevenue||0).toLocaleString('en-IN')}`} change={`↑ ${stats.upcomingBookings||0} upcoming bookings`} green />
+        <KpiCard label="Next Payout Date" val={stats.nextPayoutDate||'15 Mar 2026'} change={`Est. ₹${(stats.nextPayoutAmount||0).toLocaleString('en-IN')}`} orange />
+        <KpiCard label="March Net Yield" val={`₹${(stats.thisMonthNet||24800).toLocaleString('en-IN')}`} change="+16.4% vs last month" green />
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* Yield Chart */}
+        <div className="lg:col-span-3 bg-white border border-navy/8 p-6 md:p-8 shadow-sm relative overflow-hidden group rounded-sm">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <div className="text-[11px] tracking-[4px] text-navy/40 uppercase font-black mb-1">6-Month Performance</div>
+              <div className="text-lg font-display text-navy uppercase tracking-wide">YIELD TRAJECTORY</div>
+            </div>
+            <span className="text-[11px] text-green font-black bg-green/8 border border-green/15 px-4 py-2 rounded-sm">+34.8% ↑</span>
           </div>
           <MiniChart />
-          <div className="mt-3 pt-3 border-t border-green/8 flex justify-between text-[9px]">
-            <span className="text-fog">6-Month Total</span>
-            <span className="text-green font-mono">₹{MOCK_YIELDS.reduce((a,b)=>a+b,0).toLocaleString('en-IN')}</span>
-          </div>
         </div>
-        <div className="bg-obsidian border border-green/8 p-5">
-          <div className="text-[9px] tracking-[3px] text-ash uppercase mb-5">Revenue Split — Mar 2026</div>
-          <div className="space-y-3">
+        
+        {/* Allocation Breakdown */}
+        <div className="lg:col-span-2 bg-white border border-navy/8 p-6 md:p-8 shadow-sm rounded-sm">
+          <div className="text-[11px] tracking-[4px] text-navy/40 uppercase font-black mb-6">Revenue Breakdown</div>
+          <div className="font-display text-xl text-navy uppercase mb-8">ALLOCATION</div>
+          <div className="space-y-6">
             {[
-              {label:'Gross Revenue',      val:'₹35,429', color:'text-pearl', bar:100},
-              {label:'Your 70% Yield',     val:'₹24,800', color:'text-green',  bar:70},
-              {label:'Platform Fee (25%)', val:'-₹8,857', color:'text-fog',    bar:25},
-              {label:'Mechanix (5%)',      val:'-₹1,771', color:'text-amber',  bar:5},
+              {label:'Gross Revenue',  val:'₹35,429', color:'text-navy',    bar:100, bg:'bg-navy/15'},
+              {label:'Your 70% Yield', val:'₹24,800', color:'text-green',   bar:70,  bg:'bg-green'},
+              {label:'Platform (25%)', val:'₹8,857',  color:'text-navy/30', bar:25,  bg:'bg-navy/25'},
+              {label:'Mechanix  (5%)', val:'₹1,771',  color:'text-orange',  bar:5,   bg:'bg-orange'},
             ].map(r=>(
               <div key={r.label}>
-                <div className="flex justify-between text-[9px] mb-1">
-                  <span className="text-fog">{r.label}</span><span className={r.color}>{r.val}</span>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[12px] text-navy/50 font-bold">{r.label}</span>
+                  <span className={`text-[13px] font-black ${r.color}`}>{r.val}</span>
                 </div>
-                <div className="h-0.5 bg-graphite">
-                  <div className={`h-full ${r.color==='text-green'?'bg-green':r.color==='text-amber'?'bg-amber':'bg-graphite/80'}`} style={{width:`${r.bar}%`}}/>
+                <div className="h-1.5 bg-navy/5 rounded-full overflow-hidden">
+                  <div className={`h-full ${r.bg} rounded-full transition-all duration-1000`} style={{width:`${r.bar}%`}}/>
                 </div>
               </div>
             ))}
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-obsidian border border-green/8 p-5">
-          <div className="text-[9px] tracking-[3px] text-ash uppercase mb-4">Asset Health Score</div>
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-[10px] text-pearl font-mono">XUV 300 · KA04ND5967</span>
-            <div className="flex items-center gap-2">
-              <span className="text-[8px] text-green border border-green/20 px-2 py-0.5">ACTIVE</span>
-              <span className="text-[10px] text-green">95%</span>
+
+      <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
+        {/* Asset Health */}
+        <div className="lg:col-span-3 bg-white border border-navy/8 p-6 md:p-8 shadow-sm rounded-sm">
+          <div className="text-[11px] tracking-[4px] text-navy/40 uppercase font-black mb-1">Asset Status</div>
+          <div className="font-display text-xl text-navy uppercase mb-6">HEALTH PROTOCOL</div>
+          <div className="flex justify-between items-center mb-3">
+            <div>
+              <div className="text-[13px] text-navy font-black uppercase tracking-tight">MAHINDRA XUV 300</div>
+              <div className="text-[11px] text-navy/30 font-mono mt-0.5">KA04ND5967</div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl font-black text-green">95.4%</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-green animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
             </div>
           </div>
-          <div className="h-1.5 bg-graphite mb-4">
-            <div className="h-full bg-green" style={{width:'95%', boxShadow:'0 0 8px rgba(18,51,43,.4)'}}/>
+          <div className="h-2.5 bg-navy/5 rounded-full overflow-hidden mb-5">
+            <div className="h-full bg-green rounded-full shadow-[0_0_12px_rgba(34,197,94,0.4)]" style={{width:'95.4%'}}/>
           </div>
-          <div className="text-[9px] text-fog">Last MECHANIX PRO audit: 8 Mar 2026 · <span className="text-green">ALL PASS ✓</span></div>
+          <div className="bg-green/5 border border-green/15 px-4 py-3 rounded-sm">
+            <span className="text-[11px] text-navy/50 font-medium">Last Mechanix Pro audit: </span>
+            <span className="text-[11px] text-navy font-black">12 Mar 2026 </span>
+            <span className="text-[11px] text-green font-black">· SECURE ✓</span>
+          </div>
         </div>
-        <div className="bg-obsidian border border-green/8 p-5">
-          <div className="text-[9px] tracking-[3px] text-ash uppercase mb-4">Emergency Pause — Q1 2026</div>
-          <div className="flex gap-2 mb-3">
-            {[1,2,3,4,5].map(i=>(
-              <div key={i} className={`w-10 h-10 border flex flex-col items-center justify-center text-[10px] ${i<=(stats.pauseDaysUsed||0)?'bg-amber/15 border-amber text-amber':'border-green/20 text-fog'}`}>
-                <span className="font-display text-sm">{i}</span>
-              </div>
-            ))}
+
+        {/* Expand Portfolio CTA */}
+        <div className="lg:col-span-3 bg-navy border border-navy p-6 md:p-8 shadow-xl rounded-sm relative overflow-hidden group hover:shadow-2xl transition-all">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-orange/10 blur-[60px] rounded-full pointer-events-none" />
+          <div className="relative z-10">
+            <div className="flex justify-between items-start mb-6">
+              <div className="text-[11px] tracking-[4px] text-orange uppercase font-black mb-1">Portfolio Expansion</div>
+              <div className="w-10 h-10 bg-orange flex items-center justify-center text-white text-xl font-black rounded-sm">+</div>
+            </div>
+            <div className="font-display text-3xl text-white uppercase leading-tight mb-4">DEPLOY A<br/><span className="text-orange">SECOND ASSET.</span></div>
+            <p className="text-[13px] text-white/40 font-medium mb-8 leading-relaxed">Demand for 7-seater SUVs is <span className="text-orange font-black">140% above avg</span> in Bengaluru South. Est. ROI: ₹4.8L/yr.</p>
+            <button onClick={()=>setTab('addasset')} className="w-full bg-orange text-white py-4 text-[12px] tracking-[4px] font-black uppercase hover:bg-orange/90 transition-all shadow-lg rounded-sm">
+               EXPAND PORTFOLIO →
+            </button>
           </div>
-          <p className="text-[10px] text-fog">{stats.pauseDaysUsed||0}/5 used · <span className="text-green">{stats.pauseDaysRemaining||5} remaining this quarter</span></p>
         </div>
       </div>
     </div>
   )
 }
 
+
 function LedgerTab({trips}:{trips:Trip[]}) {
   const doExport = async () => {
     try {
       const res = await investorAPI.exportLedger()
       const url = URL.createObjectURL(new Blob([res.data]))
-      const a = document.createElement('a'); a.href=url; a.download='8lines-ledger.xlsx'; a.click()
-      toast.success('✓ CA-ready export downloaded')
-    } catch { toast.error('Export failed') }
+      const a = document.createElement('a'); a.href=url; a.download='8lines-ledger-FY26.xlsx'; a.click()
+      toast.success('✓ Financial Ledger Protocol Exported')
+    } catch { toast.error('Export protocol failed') }
   }
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <span className="text-[9px] tracking-[3px] text-ash uppercase">Trip-by-Trip Financial Breakdown</span>
-        <button onClick={doExport} className="text-[8px] tracking-[2px] text-green border border-green/25 px-4 py-2 bg-green/4 hover:bg-green/10 transition-colors">One-Click CA Export ↓</button>
-      </div>
-      <div className="bg-obsidian border border-green/8 overflow-hidden">
-        <div className="grid grid-cols-5 px-5 py-3 border-b border-green/10 text-[8px] tracking-[2px] text-fog uppercase">
-          <span>Trip ID</span><span>Gross Rent</span><span>30% Fee</span><span>Mechanix</span><span>Net 70%</span>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
+        <div>
+           <div className="text-[10px] tracking-[4px] text-green uppercase font-black mb-2 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-green shadow-glow animate-pulse" /> Live Settlement Protocol
+           </div>
+           <h2 className="font-display text-4xl text-navy uppercase font-black tracking-tighter">FINANCIAL<br/><span className="text-green">LEDGER.</span></h2>
         </div>
-        {trips.length === 0
-          ? <div className="p-10 text-center text-fog text-[11px]">No trips recorded yet.</div>
-          : trips.map(t=>(
-            <div key={t.id} className="grid grid-cols-5 px-5 py-4 border-b border-white/[.03] text-[11px] hover:bg-green/[.02] transition-colors">
-              <span className="text-ash font-mono">#{t.id.slice(0,8)}</span>
-              <span className="text-pearl">₹{t.grossRent.toLocaleString('en-IN')}</span>
-              <span className="text-fog">-₹{t.platformFee.toLocaleString('en-IN')}</span>
-              <span className="text-fog">{t.mechanixDeduction>0?`-₹${t.mechanixDeduction.toLocaleString('en-IN')}`:'—'}</span>
-              <span className="text-green">₹{t.netYield.toLocaleString('en-IN')}</span>
-            </div>
-          ))}
+        <button onClick={doExport} className="w-full md:w-auto bg-navy text-white px-10 py-5 text-[11px] tracking-[5px] uppercase font-black hover:bg-orange transition-all shadow-xl cut-md flex items-center gap-4">
+          One-Click CA Export ↓
+        </button>
+      </div>
+
+      <div className="bg-white border border-navy/5 shadow-2xl relative overflow-hidden cut-lg mb-10">
+        <div className="absolute inset-0 carbon-fiber opacity-[0.03] pointer-events-none" />
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[900px]">
+            <thead>
+               <tr className="bg-navy/[0.02]">
+                  <th className="px-8 py-5 text-[10px] tracking-[3px] text-navy/40 uppercase font-black">Transaction ID</th>
+                  <th className="px-8 py-5 text-[10px] tracking-[3px] text-navy/40 uppercase font-black">Gross Rent</th>
+                  <th className="px-8 py-5 text-[10px] tracking-[3px] text-navy/40 uppercase font-black">30% Platform Fee</th>
+                  <th className="px-8 py-5 text-[10px] tracking-[3px] text-navy/40 uppercase font-black">Mechanix Pool</th>
+                  <th className="px-8 py-5 text-[10px] tracking-[4px] text-green uppercase font-black">Net Passive Yield</th>
+               </tr>
+            </thead>
+            <tbody className="divide-y divide-navy/5">
+              {trips.length === 0 ? (
+                <tr>
+                   <td colSpan={5} className="px-8 py-20 text-center text-ash opacity-40 italic tracking-[4px] uppercase font-black">Initializing Final Settlement Logs...</td>
+                </tr>
+              ) : trips.map(t=>(
+                <tr key={t.id} className="hover:bg-navy/[0.01] transition-all group/row">
+                  <td className="px-8 py-5 text-[11px] font-mono font-black text-navy/40 group-hover/row:text-navy transition-colors">#{t.id.slice(0,12)}</td>
+                  <td className="px-8 py-5 text-[13px] font-black text-navy">₹{t.grossRent.toLocaleString('en-IN')}</td>
+                  <td className="px-8 py-5 text-[12px] font-bold text-ash/60">- ₹{t.platformFee.toLocaleString('en-IN')}</td>
+                  <td className="px-8 py-5 text-[12px] font-bold text-orange">- ₹{t.mechanixDeduction.toLocaleString('en-IN')}</td>
+                  <td className="px-8 py-5 text-[14px] font-black text-green tracking-tight group-hover/row:scale-105 transition-transform origin-left">₹{t.netYield.toLocaleString('en-IN')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+         <div className="bg-white border border-navy/5 p-8 cut-md shadow-md">
+            <div className="text-[9px] tracking-[3px] text-ash uppercase mb-4 font-black">Month-to-Date Gross</div>
+            <div className="text-4xl font-display text-navy font-black tracking-tight">₹{trips.reduce((acc,curr)=>acc+curr.grossRent, 0).toLocaleString('en-IN')}</div>
+         </div>
+         <div className="bg-white border border-navy/5 p-8 cut-md shadow-md border-b-4 border-b-green">
+            <div className="text-[9px] tracking-[3px] text-green uppercase mb-4 font-black">Settled Net Profit</div>
+            <div className="text-4xl font-display text-green font-black tracking-tight shadow-glow">₹{trips.reduce((acc,curr)=>acc+curr.netYield, 0).toLocaleString('en-IN')}</div>
+         </div>
+         <div className="bg-white border border-navy/5 p-8 cut-md shadow-md">
+            <div className="text-[9px] tracking-[3px] text-ash uppercase mb-4 font-black">Platform Contribution</div>
+            <div className="text-4xl font-display text-navy/30 font-black tracking-tight">₹{trips.reduce((acc,curr)=>acc+curr.platformFee + curr.mechanixDeduction, 0).toLocaleString('en-IN')}</div>
+         </div>
       </div>
     </div>
   )
 }
+
+
+function TicketsTab() {
+  const [tickets, setTickets] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [msg, setMsg] = useState('')
+
+  useEffect(() => {
+    investorAPI.getTickets().then(r=>setTickets(r.data)).catch(()=>{}).finally(()=>setLoading(false))
+  }, [])
+
+  const submit = async () => {
+    if(!msg) return
+    try {
+      await investorAPI.createTicket({ subject: "IRM Support", message: msg })
+      toast.success('Ticket submitted to IRM Command')
+      setMsg(''); setShowForm(false)
+      const r = await investorAPI.getTickets(); setTickets(r.data)
+    } catch { toast.error('Submission failed') }
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto">
+      <div className="flex justify-between items-center mb-10">
+         <div>
+            <div className="text-[10px] tracking-[4px] text-orange uppercase font-black mb-2 flex items-center gap-2">
+               <span className="w-1.5 h-1.5 rounded-full bg-orange shadow-glow animate-pulse" /> Investor Relations Center
+            </div>
+            <h2 className="font-display text-4xl text-navy uppercase font-black tracking-tighter">SUPPORT<br/><span className="text-orange">INBOX.</span></h2>
+         </div>
+         {!showForm && (
+           <button onClick={()=>setShowForm(true)} className="bg-navy text-white px-10 py-5 text-[11px] tracking-[5px] uppercase font-black hover:bg-orange transition-all shadow-xl cut-md">
+             + NEW TICKET
+           </button>
+         )}
+      </div>
+
+      {showForm && (
+        <div className="bg-white border border-navy/10 p-8 md:p-12 mb-10 shadow-2xl cut-lg animate-in fade-in slide-in-from-top duration-500">
+           <div className="text-[9px] tracking-[3px] text-navy/40 uppercase font-black mb-6">// IRM Command Handshake</div>
+           <textarea value={msg} onChange={e=>setMsg(e.target.value)} placeholder="Describe your operational or financial query in detail..."
+             className="w-full bg-navy/5 border border-navy/10 p-8 text-[14px] text-navy font-medium placeholder:text-navy/20 outline-none focus:border-orange/20 transition-all min-h-[200px] mb-8" />
+           <div className="flex gap-4">
+              <button onClick={submit} className="flex-1 bg-green text-white py-5 text-[11px] tracking-[5px] font-black uppercase cut-md hover:bg-green-dim transition-all shadow-glow-green">EXECUTE SUBMISSION →</button>
+              <button onClick={()=>setShowForm(false)} className="px-10 py-5 border border-navy/10 text-[11px] tracking-[5px] font-black text-navy uppercase cut-md hover:bg-navy/5">CANCEL</button>
+           </div>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {loading ? [1,2].map(i=><div key={i} className="h-24 bg-navy/5 animate-pulse m-2"/>) : 
+         tickets.length === 0 ? (
+           <div className="p-20 text-center border-2 border-dashed border-navy/5 bg-navy/[0.01]">
+              <div className="text-4xl mb-6 opacity-30">✉</div>
+              <p className="text-[11px] text-ash/40 font-black uppercase tracking-[4px] italic">No active support threads in your archival vault.</p>
+           </div>
+         ) : tickets.map(t=>(
+          <div key={t.id} className="bg-white border border-navy/5 p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 group hover:border-orange/20 transition-all cut-md shadow-lg">
+            <div className="flex-1">
+               <div className="flex items-center gap-5 mb-3">
+                  <span className="text-[9px] tracking-[2px] font-mono text-navy/30">ID: #{t.id.slice(0,8)}</span>
+                  <span className={`text-[8px] tracking-[3px] px-3 py-1 font-black uppercase rounded-sm ${t.status==='open'?'bg-orange/10 text-orange':'bg-green/10 text-green'}`}>{t.status}</span>
+               </div>
+               <p className="text-[13px] text-navy font-bold leading-relaxed mb-4">{t.message}</p>
+               <div className="text-[9px] text-ash font-black uppercase tracking-widest">{new Date(t.created_at).toLocaleString()} // IRM CORE</div>
+            </div>
+            <div className="w-full md:w-auto text-right">
+               <button className="text-[10px] tracking-[4px] text-navy font-black hover:text-orange transition-colors uppercase border-b border-navy/10 pb-1">VIEW THREAD →</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 
 function FleetTab() {
   const [vehicles, setVehicles] = useState<any[]>([])
@@ -181,61 +357,82 @@ function FleetTab() {
 
   return (
     <div>
-      <div className="text-[9px] tracking-[3px] text-ash uppercase mb-4">My Asset Portfolio</div>
-      {loading ? [1].map(i=><div key={i} className="h-64 animate-pulse bg-navy/5 mb-4"/>) : vehicles.map(v=>(
-        <div key={v.reg} className="bg-void border border-navy/10 p-6 mb-4 shadow-sm">
-          <div className="flex justify-between items-start mb-5">
+      <div className="text-[9px] md:text-[10px] tracking-[3px] md:tracking-[4px] text-navy uppercase font-black mb-8 flex items-center gap-2 md:gap-3">
+        <span className="w-6 md:w-8 h-px bg-green" /> Asset Strategic Portfolio
+      </div>
+      {loading ? [1].map(i=><div key={i} className="h-64 animate-pulse bg-navy/5 mb-6"/>) : vehicles.map(v=>(
+        <div key={v.reg} className="glass-card border border-navy/10 p-8 md:p-10 mb-8 shadow-premium hover:shadow-glow-green transition-all duration-700 cut-lg">
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-6 mb-10">
             <div>
-              <div className="font-display text-2xl text-navy tracking-[2px] mb-1">{v.make} {v.model}</div>
-              <div className="text-[10px] font-mono text-ash">{v.registration_number}</div>
+              <div className="font-display text-4xl md:text-5xl text-navy tracking-tight mb-3">{v.make} {v.model}</div>
+              <div className="flex items-center gap-4">
+                <div className="text-[12px] font-mono text-ash font-black uppercase tracking-widest">{v.registration_number}</div>
+                <span className="w-1.5 h-1.5 rounded-full bg-green glow-green animate-pulse" />
+              </div>
             </div>
-            <span className={`text-[8px] tracking-[2px] border px-3 py-1.5 font-bold ${v.status==='active'?'text-green border-green/30 bg-green/5':'text-amber border-amber/30 bg-amber/5'}`}>{v.status.toUpperCase()}</span>
+            <span className={`text-[10px] tracking-[4px] border-2 px-8 py-2.5 font-black cut-sm transition-all ${v.status==='active'?'text-green border-green/20 glass-card glow-green':'text-orange border-orange/20 bg-orange/5'}`}>
+              {v.status.toUpperCase()}
+            </span>
           </div>
-          <div className="grid grid-cols-4 gap-3 mb-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
             {[
-              {label:'Total Revenue', val:`₹${(v.total_revenue||0).toLocaleString('en-IN')}`, g:true},
-              {label:'Yield (70%)', val:`₹${(v.net_yield||0).toLocaleString('en-IN')}`, g:true},
-              {label:'Total Trips', val:(v.total_trips||0).toString(), g:false},
-              {label:'Health Score', val:`${v.health_score||100}%`, g:false},
+              {label:'Executed Yield', val:`₹${(v.total_revenue||0).toLocaleString('en-IN')}`, g:false},
+              {label:'Net Passive', val:`₹${(v.net_yield||0).toLocaleString('en-IN')}`, g:true},
+              {label:'Trip Protocol', val:(v.total_trips||0).toString(), g:false},
+              {label:'Health Score', val:`${v.health_score||100}%`, g:true},
             ].map(s=>(
-              <div key={s.label} className="bg-navy/5 border border-navy/5 p-4">
-                <div className="text-[8px] text-ash mb-2 font-bold uppercase tracking-wider">{s.label}</div>
-                <div className={`font-display text-xl ${s.g?'text-green':'text-navy'}`}>{s.val}</div>
+              <div key={s.label} className="bg-navy/[.02] border border-navy/5 p-6 glass-card cut-md">
+                <div className="text-[9px] text-ash mb-3 font-black uppercase tracking-[2.5px]">{s.label}</div>
+                <div className={`font-display text-3xl ${s.g?'text-green glow-green':'text-navy'}`}>{s.val}</div>
               </div>
             ))}
           </div>
-          <div className="mb-2 flex justify-between text-[9px] font-bold">
-            <span className="text-ash uppercase tracking-wider">MECHANIX PRO Health</span>
-            <span className="text-green">{v.health_score||100}%</span>
+          <div className="mb-4 flex justify-between text-[10px] font-black uppercase tracking-[3px]">
+            <span className="text-navy">Mechanix Pro Strategic Index</span>
+            <span className="text-green glow-green">{v.health_score||100}%</span>
           </div>
-          <div className="h-2 bg-navy/10">
-            <div className="h-full bg-green" style={{width:`${v.health_score||100}%`, boxShadow:'0 0 10px rgba(18,51,43,.4)'}}/>
+          <div className="h-4 bg-navy/[.03] overflow-hidden rounded-full">
+            <div className="h-full bg-green glow-green shadow-[0_0_30px_rgba(34,197,94,.6)]" style={{width:`${v.health_score||100}%`}}/>
           </div>
-          <div className="mt-4 text-[9px] text-ash font-medium italic">Last audit: {v.last_audit_date ? new Date(v.last_audit_date).toLocaleDateString() : 'Pending first audit'} · <span className="text-green uppercase font-bold">Protocol Secure</span></div>
-          {v.agreement_url && (
-            <div className="mt-4 pt-4 border-t border-navy/5 flex justify-end">
-              <a href={v.agreement_url} target="_blank" rel="noopener noreferrer" className="text-[8px] tracking-[2px] text-navy hover:text-green font-bold uppercase flex items-center gap-2">
-                View Master Agreement ↗
-              </a>
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-between border-t border-navy/5 pt-10 gap-6">
+            <div className="text-[10px] text-ash font-black italic tracking-widest uppercase">
+              Last Verify Protocol: <span className="text-green">{v.last_audit_date ? new Date(v.last_audit_date).toLocaleDateString() : 'Active // Secured'}</span>
             </div>
-          )}
+            {v.agreement_url && (
+              <a href={v.agreement_url} target="_blank" rel="noopener noreferrer" className="text-[10px] tracking-[5px] text-navy hover:text-orange font-black uppercase flex items-center gap-3 transition-all group">
+                Smart Contract ↗
+                <span className="w-10 h-px bg-navy/10 group-hover:bg-orange transition-all" />
+              </a>
+            )}
+          </div>
         </div>
       ))}
       {!loading && vehicles.length === 0 && (
-        <div className="p-20 text-center bg-void border border-navy/10 shadow-sm">
-          <div className="text-4xl mb-4">🚗</div>
-          <div className="text-[11px] text-navy font-bold uppercase tracking-widest mb-2">No Assets Deployed</div>
-          <p className="text-[10px] text-ash max-w-xs mx-auto mb-6">You haven&apos;t added any vehicles to the protocol yet. Start earning 70% yield by adding your first asset.</p>
-          <a href="/investor#form" className="inline-block bg-green text-void text-[9px] tracking-[3px] px-8 py-3 font-bold uppercase hover:bg-green-dim transition-all cut-sm">Add Your First Asset →</a>
+        <div className="p-12 md:p-20 text-center bg-void border border-navy/10 shadow-sm">
+          <div className="text-3xl md:text-4xl mb-4">🚗</div>
+          <div className="text-[10px] md:text-[11px] text-navy font-bold uppercase tracking-widest mb-2">No Assets Deployed</div>
+          <p className="text-[9px] md:text-[10px] text-ash max-w-xs mx-auto mb-6">You haven&apos;t added any vehicles to the protocol yet. Start earning 70% yield by adding your first asset.</p>
+          <a href="/investor#form" className="inline-block bg-green text-void text-[8px] md:text-[9px] tracking-[2px] md:tracking-[3px] px-6 md:px-8 py-2.5 md:py-3 font-bold uppercase hover:bg-green-dim transition-all cut-sm">Add Your First Asset →</a>
         </div>
       )}
     </div>
   )
 }
 
+
 function CalendarTab({stats}:{stats:InvestorStats|null}) {
-  const [selected, setSelected] = useState<string[]>([])
+  const [vehicles, setVehicles] = useState<any[]>([])
+  const [selectedVehicle, setSelectedVehicle] = useState<string>('')
+  const [selectedDates, setSelectedDates] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
+  
+  useEffect(() => {
+    investorAPI.getVehicles().then(r => {
+      setVehicles(r.data)
+      if (r.data.length > 0) setSelectedVehicle(r.data[0].id)
+    })
+  }, [])
+
   const used = stats?.pauseDaysUsed || 0
   const remaining = stats?.pauseDaysRemaining ?? 5
 
@@ -244,80 +441,100 @@ function CalendarTab({stats}:{stats:InvestorStats|null}) {
 
   const toggle = (d:number) => {
     const key = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
-    if(selected.includes(key)) { setSelected(s=>s.filter(x=>x!==key)); return }
-    if(selected.length + used >= 5) { toast.error('Maximum 5 pause days per quarter'); return }
-    setSelected(s=>[...s,key])
+    if(selectedDates.includes(key)) { setSelectedDates(s=>s.filter(x=>x!==key)); return }
+    if(selectedDates.length + used >= 5) { toast.error('Maximum 5 pause days per quarter'); return }
+    setSelectedDates(s=>[...s,key])
   }
 
   const submit = async () => {
-    if(!selected.length) { toast.error('Select at least one date'); return }
+    if(!selectedVehicle) { toast.error('Select a vehicle to pause'); return }
+    if(!selectedDates.length) { toast.error('Select at least one date'); return }
     setBusy(true)
-    await new Promise(r=>setTimeout(r,1000))
-    toast.success(`✓ ${selected.length} pause day${selected.length>1?'s':''} blocked successfully`)
-    setSelected([])
-    setBusy(false)
+    try {
+      await investorAPI.pauseVehicle(selectedVehicle, selectedDates)
+      toast.success(`✓ ${selectedDates.length} pause day(s) blocked for deployment.`)
+      setSelectedDates([])
+    } catch {
+      toast.error('Pause protocol failed.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
     <div>
-      <div className="text-[9px] tracking-[3px] text-ash uppercase mb-4">Emergency Pause Calendar</div>
-      <div className="grid grid-cols-2 gap-6">
-        <div className="bg-obsidian border border-green/8 p-6">
-          <div className="flex justify-between items-center mb-5">
-            <span className="text-[11px] text-white font-medium">March 2026</span>
-            <div className="flex items-center gap-3 text-[9px]">
-              <span className="text-amber">{used + selected.length}/5 used</span>
-              <span className="text-green">{remaining - selected.length} left</span>
+      <div className="text-[9px] md:text-[10px] tracking-[3px] md:tracking-[4px] text-navy uppercase font-black mb-8 flex items-center gap-2 md:gap-3">
+        <span className="w-6 md:w-8 h-px bg-orange" /> Emergency Asset Pause Calendar
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+        <div className="bg-void border border-navy/10 p-6 md:p-8 shadow-sm">
+          {vehicles.length > 1 && (
+            <div className="mb-8">
+              <label className="text-[8px] tracking-[3px] text-ash uppercase block mb-3 font-black">Select Asset to Pause</label>
+              <select value={selectedVehicle} onChange={e=>setSelectedVehicle(e.target.value)}
+                className="w-full bg-navy/5 border border-navy/10 px-4 py-3 text-[11px] font-black uppercase outline-none focus:border-orange transition-all">
+                {vehicles.map(v => (
+                  <option key={v.id} value={v.id}>{v.make} {v.model} ({v.registration_number})</option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div className="flex justify-between items-center mb-8">
+            <span className="text-[11px] md:text-[12px] text-navy font-black tracking-widest uppercase">March 2026</span>
+            <div className="flex items-center gap-3 md:gap-4 text-[8px] md:text-[9px] font-black uppercase">
+              <span className="text-orange">{used + selectedDates.length}/5 USED</span>
+              <span className="text-green">{remaining - selectedDates.length} REMAINING</span>
             </div>
           </div>
-          <div className="grid grid-cols-7 gap-1 mb-3">
+          <div className="grid grid-cols-7 gap-1 md:gap-2 mb-4">
             {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d=>(
-              <div key={d} className="text-center text-[8px] text-fog py-1">{d}</div>
+              <div key={d} className="text-center text-[8px] md:text-[9px] text-ash font-black uppercase tracking-widest">{d}</div>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-1">
-            {/* March 2026 starts on Sunday */}
+          <div className="grid grid-cols-7 gap-1 md:gap-2">
             {days.map(d=>{
               const key = `2026-03-${String(d).padStart(2,'0')}`
-              const isSel = selected.includes(key)
+              const isSel = selectedDates.includes(key)
               const isPast = d < today.getDate()
               return (
-                <button key={d} disabled={isPast || (remaining - selected.length <= 0 && !isSel)}
+                <button key={d} disabled={isPast || (remaining - selectedDates.length <= 0 && !isSel)}
                   onClick={()=>toggle(d)}
-                  className={`h-8 text-[10px] rounded-sm transition-all
-                    ${isPast ? 'text-graphite cursor-not-allowed' :
-                      isSel ? 'bg-amber/20 border border-amber text-amber' :
-                      'hover:bg-green/10 text-fog hover:text-green border border-transparent hover:border-green/20'}`}>
+                  className={`h-8 sm:h-10 text-[10px] md:text-[11px] font-bold transition-all border
+                    ${isPast ? 'text-ash/30 border-transparent cursor-not-allowed' :
+                      isSel ? 'bg-orange text-void border-orange shadow-[0_4px_15px_rgba(248,147,31,.3)]' :
+                      'hover:bg-navy/5 text-navy border-navy/5'}`}>
                   {d}
                 </button>
               )
             })}
           </div>
-          {selected.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-green/8">
-              <p className="text-[9px] text-fog mb-3">{selected.length} date{selected.length>1?'s':''} selected</p>
+          {selectedDates.length > 0 && (
+            <div className="mt-8 pt-8 border-t border-navy/5">
+              <p className="text-[9px] md:text-[10px] text-ash font-bold uppercase tracking-widest mb-4">Protocol: {selectedDates.length} date(s) selected</p>
               <button onClick={submit} disabled={busy}
-                className="w-full bg-amber/10 border border-amber/30 text-amber text-[9px] tracking-[2px] uppercase py-3 hover:bg-amber/20 transition-all disabled:opacity-60">
-                {busy ? 'Blocking...' : 'CONFIRM PAUSE DAYS →'}
+                className="w-full bg-navy text-void text-[9px] md:text-[10px] tracking-[3px] md:tracking-[4px] uppercase py-3.5 md:py-4 hover:bg-orange transition-all font-black disabled:opacity-60 cut-sm">
+                {busy ? 'SYNCHRONIZING...' : 'CONFIRM PAUSE LOCK →'}
               </button>
             </div>
           )}
         </div>
-        <div className="space-y-4">
-          <div className="bg-obsidian border border-amber/15 p-5">
-            <div className="text-[9px] tracking-[2px] text-amber uppercase mb-3">⚠ Pause Policy</div>
-            <ul className="space-y-2 text-[10px] text-fog leading-relaxed">
-              <li>• Maximum <span className="text-green">5 pause days</span> per calendar quarter</li>
-              <li>• Minimum <span className="text-green">48 hours</span> advance notice required</li>
-              <li>• Paused days = ₹0 revenue for that asset</li>
-              <li>• Cannot pause days already booked by guests</li>
+        <div className="space-y-6">
+          <div className="bg-orange/5 border border-orange/10 p-6 md:p-8">
+            <div className="text-[9px] md:text-[10px] tracking-[3px] text-orange uppercase mb-6 font-black flex items-center gap-2 md:gap-3">
+              <span className="w-5 md:w-6 h-px bg-orange" /> Pause Protocol Policy
+            </div>
+            <ul className="space-y-4 text-[10px] md:text-[11px] text-ash font-medium leading-relaxed">
+              <li className="flex gap-3"><span className="text-orange">/</span> Maximum 5 pause days allowed per calendar quarter</li>
+              <li className="flex gap-3"><span className="text-orange">/</span> Minimum 48 hours advance notice required for system lock</li>
+              <li className="flex gap-3"><span className="text-orange">/</span> Asset revenue is projected as ₹0 for selected durations</li>
+              <li className="flex gap-3"><span className="text-orange">/</span> Protocol cannot override active guest rental bookings</li>
             </ul>
           </div>
-          <div className="bg-obsidian border border-green/8 p-5">
-            <div className="text-[9px] tracking-[2px] text-ash uppercase mb-3">Q1 2026 Usage</div>
-            <div className="flex gap-2">
+          <div className="bg-void border border-navy/10 p-4 md:p-6 flex items-center justify-between">
+            <span className="text-[9px] md:text-[10px] tracking-[2px] md:tracking-[3px] text-navy uppercase font-black font-display text-center">Quarterly Usage Efficiency</span>
+            <div className="flex gap-1.5 md:gap-2">
               {[1,2,3,4,5].map(i=>(
-                <div key={i} className={`w-10 h-10 border flex items-center justify-center text-[10px] ${i<=used?'bg-amber/15 border-amber text-amber':i<=(used+selected.length)?'bg-green/15 border-green text-green':'border-green/20 text-fog'}`}>
+                <div key={i} className={`w-7 h-7 md:w-8 md:h-8 flex items-center justify-center text-[9px] md:text-[10px] font-bold border-2 ${i<=used?'bg-orange border-orange text-void':i<=(used+selectedDates.length)?'bg-green border-green text-void':'border-navy/5 text-ash'}`}>
                   {i}
                 </div>
               ))}
@@ -329,185 +546,157 @@ function CalendarTab({stats}:{stats:InvestorStats|null}) {
   )
 }
 
-function TicketsTab() {
-  const [subject, setSubject] = useState('')
-  const [msg, setMsg] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [tickets, setTickets] = useState([
-    {id:'TKT-001', subject:'Payout discrepancy — Feb 2026', status:'resolved', date:'2 Mar 2026', reply:'Resolved. Extra ₹200 added to March payout.'},
-  ])
 
-  const submit = async () => {
-    if (!subject||!msg) { toast.error('Fill all fields'); return }
-    setBusy(true)
-    try {
-      await investorAPI.createTicket({subject, message:msg, priority:'medium'})
-      toast.success('✓ Ticket submitted. We respond within 4 hours.')
-      setTickets(t=>[{id:`TKT-00${t.length+2}`, subject, status:'open', date:'Today', reply:''}, ...t])
-      setSubject(''); setMsg('')
-    } catch { toast.error('Submit failed') }
-    finally { setBusy(false) }
-  }
-
-  return (
-    <div className="grid grid-cols-2 gap-6">
-      <div>
-        <div className="text-[9px] tracking-[3px] text-ash uppercase mb-4">Raise a Support Ticket</div>
-        <div className="bg-obsidian border border-green/10 p-5 space-y-4">
-          <div>
-            <label className="text-[8px] tracking-[3px] text-fog uppercase block mb-2">Subject</label>
-            <input value={subject} onChange={e=>setSubject(e.target.value)} placeholder="e.g. Payout discrepancy"
-              className="w-full bg-deep border border-green/12 px-4 py-3 text-[12px] text-pearl font-mono placeholder-graphite focus:border-green/50 outline-none transition-all" />
-          </div>
-          <div>
-            <label className="text-[8px] tracking-[3px] text-fog uppercase block mb-2">Message</label>
-            <textarea value={msg} onChange={e=>setMsg(e.target.value)} rows={5} placeholder="Describe in detail..."
-              className="w-full bg-deep border border-green/12 px-4 py-3 text-[12px] text-pearl font-mono placeholder-graphite focus:border-green/50 outline-none transition-all resize-none" />
-          </div>
-          <button onClick={submit} disabled={busy}
-            className="w-full bg-green text-void text-[9px] tracking-[3px] uppercase py-3 cut-sm font-medium hover:bg-green-dim disabled:opacity-60 transition-all">
-            {busy?'Submitting...':'SUBMIT TICKET →'}
-          </button>
-        </div>
-        <div className="mt-4 bg-obsidian border border-green/8 p-4 text-[9px] text-fog">
-          ⏱ Response SLA: <span className="text-green">4 hours</span> · Priority escalation available
-        </div>
-      </div>
-      <div>
-        <div className="text-[9px] tracking-[3px] text-ash uppercase mb-4">Your Tickets</div>
-        <div className="space-y-3">
-          {tickets.map(t=>(
-            <div key={t.id} className="bg-obsidian border border-green/8 p-4">
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-[10px] text-pearl">{t.subject}</span>
-                <span className={`text-[7px] tracking-[2px] uppercase px-2 py-0.5 border ${t.status==='open'?'text-amber border-amber/30':'text-green border-green/30'}`}>{t.status}</span>
-              </div>
-              <div className="text-[9px] text-fog mb-1">{t.id} · {t.date}</div>
-              {t.reply && <div className="text-[9px] text-ash border-t border-green/6 pt-2 mt-2">↳ {t.reply}</div>}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
 
 function TaxTab() {
   return (
     <div>
-      <div className="text-[9px] tracking-[3px] text-ash uppercase mb-4">Tax Center — CA Export</div>
-      <div className="bg-obsidian border border-green/8 p-6 mb-4">
-        <p className="text-[11px] text-fog mb-5">Download CA-ready Excel for any month or full financial year. Includes Gross Rent, Platform Fee, Mechanix deductions, Net Yield, and TDS-applicable fields.</p>
-        <div className="grid grid-cols-2 gap-4">
+      <div className="text-[9px] md:text-[10px] tracking-[3px] md:tracking-[4px] text-navy uppercase font-black mb-8 flex items-center gap-2 md:gap-3">
+        <span className="w-6 md:w-8 h-px bg-green" /> Financial Tax & CA Portal
+      </div>
+      <div className="bg-white border border-navy/10 p-6 md:p-10 mb-8 shadow-md">
+        <p className="text-[12px] md:text-[13px] text-ash font-medium leading-relaxed mb-10 max-w-2xl">
+          Protocol Export: Download verified, CA-ready ledger abstracts. Each export contains trip-by-trip gross values, platform deductions, and Mechanix audits for the selected duration.
+        </p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
           <div>
-            <div className="text-[8px] tracking-[3px] text-fog uppercase mb-3">Monthly Exports</div>
-            <div className="space-y-2">
+            <div className="text-[8px] md:text-[9px] tracking-[3px] md:tracking-[4px] text-navy uppercase mb-6 font-black flex items-center gap-2 md:gap-3">
+              <span className="w-5 md:w-6 h-px bg-navy/10" /> Monthly Ledger Abstracts
+            </div>
+            <div className="space-y-3">
               {['Jan 2026','Feb 2026','Mar 2026'].map(m=>(
-                <button key={m} onClick={()=>{investorAPI.exportLedger(m);toast.success(`Downloading ${m}...`)}}
-                  className="w-full flex items-center justify-between border border-green/20 text-[10px] px-4 py-3 hover:bg-green/5 hover:border-green/40 transition-all group">
-                  <span className="text-ash group-hover:text-pearl">{m}</span>
-                  <span className="text-green text-[9px]">↓ Excel</span>
+                <button key={m} onClick={()=>{investorAPI.exportLedger(m);toast.success(`Exporting ${m}...`)}}
+                  className="w-full flex items-center justify-between border-2 border-navy/5 text-[10px] md:text-[11px] px-4 md:px-6 py-3.5 md:py-4 hover:border-green hover:bg-green/5 transition-all group font-bold">
+                  <span className="text-navy group-hover:text-green uppercase tracking-widest">{m}</span>
+                  <span className="text-[8px] md:text-[9px] text-ash font-black tracking-widest uppercase">↓ XLSX</span>
                 </button>
               ))}
             </div>
           </div>
           <div>
-            <div className="text-[8px] tracking-[3px] text-fog uppercase mb-3">Annual Export</div>
-            <button onClick={()=>{investorAPI.exportLedger('FY 2025-26');toast.success('Downloading FY 2025-26...')}}
-              className="w-full border border-green/30 bg-green/5 p-6 text-center hover:bg-green/10 transition-all group">
-              <div className="font-display text-3xl text-green glow-green mb-2 group-hover:scale-110 transition-transform">FY</div>
-              <div className="text-[10px] text-ash mb-1">2025 – 2026</div>
-              <div className="text-[9px] text-green">↓ Full Year Excel</div>
+            <div className="text-[8px] md:text-[9px] tracking-[3px] md:tracking-[4px] text-navy uppercase mb-6 font-black flex items-center gap-2 md:gap-3">
+              <span className="w-5 md:w-6 h-px bg-navy/10" /> Annual Consolidation
+            </div>
+            <button onClick={()=>{investorAPI.exportLedger('FY 2025-26');toast.success('Compiling FY 2025-26...')}}
+              className="w-full border-2 border-navy/10 bg-navy/[.01] p-6 md:p-10 text-center hover:border-green hover:bg-green/5 transition-all group">
+              <div className="font-display text-4xl md:text-5xl text-navy mb-4 group-hover:text-green group-hover:scale-105 transition-all font-black">FY 25-26</div>
+              <div className="text-[9px] md:text-[10px] text-ash font-black uppercase tracking-[2px] md:tracking-[3px] mb-4">Financial Year Console</div>
+              <div className="inline-block bg-navy text-void text-[8px] md:text-[9px] tracking-[2px] md:tracking-[3px] px-6 md:px-8 py-2.5 md:py-3 font-black uppercase group-hover:bg-green">Generate Full Year Export ↓</div>
             </button>
           </div>
         </div>
       </div>
-      <div className="bg-obsidian border border-green/8 p-5">
-        <div className="text-[9px] tracking-[3px] text-ash uppercase mb-3">FY Summary</div>
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            {label:'Total Gross Revenue', val:'₹1,87,200'},
-            {label:'Total Net Yield (70%)', val:'₹1,32,000', g:true},
-            {label:'Total Platform Fee', val:'₹46,800'},
-          ].map(s=>(
-            <div key={s.label} className="bg-deep border border-green/8 p-4">
-              <div className="text-[8px] text-fog mb-2">{s.label}</div>
-              <div className={`font-display text-2xl ${s.g?'text-green glow-green':'text-white'}`}>{s.val}</div>
-            </div>
-          ))}
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        {[
+          {label:'Total Gross Compiled', val:'₹1,87,200', cls:false},
+          {label:'Net Passive Consolidation', val:'₹1,32,000', cls:true},
+          {label:'Total Regulatory Fee', val:'₹46,800', cls:false},
+        ].map(s=>(
+          <div key={s.label} className="bg-void border border-navy/10 p-4 md:p-6 shadow-sm">
+            <div className="text-[8px] md:text-[9px] text-ash mb-2 md:mb-3 font-black uppercase tracking-[2px]">{s.label}</div>
+            <div className={`font-display text-2xl md:text-3xl ${s.cls?'text-green':'text-navy'}`}>{s.val}</div>
+          </div>
+        ))}
       </div>
     </div>
   )
 }
 
+
 function KYCTab() {
   const [pan, setPan] = useState<File|null>(null)
   const [aad, setAad] = useState<File|null>(null)
   const [busy, setBusy] = useState(false)
+  
   const upload = async () => {
     if(!pan||!aad) { toast.error('Upload both PAN and Aadhar'); return }
     setBusy(true)
     try {
       const fd = new FormData(); fd.append('pan',pan); fd.append('aadhaar',aad)
-      await investorAPI.uploadKYC(fd); toast.success('✓ KYC uploaded. Verified within 24 hours.')
+      await investorAPI.uploadKYC(fd); toast.success('✓ Secure KYC Protocol Complete')
     } catch { toast.error('Upload failed') }
     finally { setBusy(false) }
   }
+
   return (
-    <div className="space-y-5">
-      <div className="bg-amber/5 border border-amber/20 p-4 text-[10px] text-amber leading-relaxed">⚠ KYC is required before your first payout. All documents encrypted in AWS S3.</div>
-      <div className="grid grid-cols-2 gap-4">
-        {[{label:'PAN Card',hint:'Front side · JPG/PNG/PDF',val:pan,set:setPan},{label:'Aadhar Card',hint:'Front + back · JPG/PNG/PDF',val:aad,set:setAad}].map(f=>(
-          <div key={f.label} className="bg-obsidian border border-green/10 p-5">
-            <div className="text-[9px] tracking-[3px] text-ash uppercase mb-2">{f.label}</div>
-            <p className="text-[9px] text-fog mb-4">{f.hint}</p>
-            <label className="block border border-dashed border-green/25 p-6 text-center cursor-pointer hover:bg-green/[.02] hover:border-green/40 transition-all">
-              <div className="text-2xl mb-2">{f.val?'✓':'📎'}</div>
-              <div className="text-[9px] tracking-[2px] text-ash">{f.val?f.val.name:'TAP TO UPLOAD'}</div>
+    <div className="max-w-4xl mx-auto space-y-6 md:space-y-8">
+      <div className="text-[9px] md:text-[10px] tracking-[3px] md:tracking-[4px] text-navy uppercase font-black flex items-center gap-2 md:gap-3">
+        <span className="w-6 md:w-8 h-px bg-orange" /> Secure KYC Verification Vault
+      </div>
+      <div className="bg-orange/5 border border-orange/20 p-4 md:p-6 text-[10px] md:text-[11px] text-orange font-bold uppercase tracking-wider md:tracking-widest flex items-center gap-4">
+        <span className="text-xl md:text-2xl">⚠</span> PROTOCOL REQUIREMENT: KYC COMPLIANCE MUST BE VERIFIED BEFORE INITIAL PAYOUT.
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+        {[
+          {label:'PAN Registry', hint:'High-res Front · JPG/PDF', val:pan, set:setPan},
+          {label:'Aadhar Protocol', hint:'Front + Rear · JPG/PDF', val:aad, set:setAad}
+        ].map(f=>(
+          <div key={f.label} className="bg-white border border-navy/10 p-6 md:p-10 shadow-sm hover:border-navy/30 transition-all text-center">
+            <div className="text-[9px] md:text-[10px] tracking-[2px] md:tracking-[3px] text-navy uppercase mb-2 md:mb-3 font-black">{f.label}</div>
+            <p className="text-[9px] md:text-[10px] text-ash mb-6 md:mb-8 font-bold italic">{f.hint}</p>
+            <label className="block border-2 border-dashed border-navy/10 p-6 md:p-10 cursor-pointer hover:border-green hover:bg-green/5 transition-all group">
+              <div className="text-3xl md:text-4xl mb-3 md:mb-4 group-hover:scale-110 transition-transform">{f.val?'✓':'📁'}</div>
+              <div className="text-[8px] md:text-[9px] tracking-[2px] md:tracking-[3px] text-navy font-black uppercase truncate">{f.val?f.val.name:'SELECT DOCUMENT'}</div>
               <input type="file" accept=".jpg,.jpeg,.png,.pdf" className="hidden" onChange={e=>f.set(e.target.files?.[0]||null)} />
             </label>
           </div>
         ))}
       </div>
       <button onClick={upload} disabled={busy}
-        className="bg-green text-void text-[9px] tracking-[4px] uppercase px-10 py-4 cut-sm font-medium hover:bg-green-dim disabled:opacity-60 transition-all">
-        {busy?'Uploading...':'UPLOAD & VERIFY KYC →'}
+        className="w-full bg-navy text-void text-[10px] md:text-[11px] tracking-[4px] md:tracking-[5px] uppercase py-5 md:py-6 font-black hover:bg-green transition-all disabled:opacity-60 cut-sm">
+        {busy?'SYNCHRONIZING WITH AWS S3...':'TRANSMIT & VERIFY DOCUMENTS →'}
       </button>
     </div>
   )
 }
 
+
 function BankTab() {
   const [form, setForm] = useState({account_number:'',ifsc_code:'',upi_id:''})
   const save = async () => {
-    try { await investorAPI.saveBankDetails(form); toast.success('✓ Bank details saved') }
+    try { await investorAPI.saveBankDetails(form); toast.success('✓ Payout Routing Secured') }
     catch { toast.error('Save failed') }
   }
-  const inp = "w-full bg-deep border border-green/12 px-4 py-3 text-[12px] text-pearl font-mono placeholder-graphite focus:border-green/50 outline-none transition-all"
+  const inp = "w-full bg-void border border-navy/10 px-4 md:px-6 py-3.5 md:py-4 text-[12px] md:text-[13px] text-navy font-bold font-mono placeholder-navy/10 focus:border-green outline-none transition-all"
   return (
-    <div>
-      <div className="text-[9px] tracking-[3px] text-ash uppercase mb-4">Bank Routing — Payout Details</div>
-      <div className="bg-obsidian border border-green/10 p-6 max-w-lg space-y-4">
-        {[{key:'account_number',label:'Account Number',ph:'XXXX XXXX XXXX'},{key:'ifsc_code',label:'IFSC Code',ph:'SBIN0001234'},{key:'upi_id',label:'UPI ID',ph:'name@upi'}].map(f=>(
-          <div key={f.key}>
-            <label className="text-[8px] tracking-[3px] text-fog uppercase block mb-2">{f.label}</label>
-            <input value={(form as any)[f.key]} onChange={e=>setForm(p=>({...p,[f.key]:e.target.value}))} placeholder={f.ph} className={inp} />
-          </div>
-        ))}
-        <button onClick={save} className="bg-green text-void text-[9px] tracking-[3px] uppercase px-8 py-3 cut-sm font-medium hover:bg-green-dim transition-all">SAVE BANK DETAILS →</button>
+    <div className="max-w-4xl mx-auto">
+      <div className="text-[9px] md:text-[10px] tracking-[3px] md:tracking-[4px] text-navy uppercase font-black mb-8 flex items-center gap-2 md:gap-3">
+        <span className="w-6 md:w-8 h-px bg-green" /> Payout Routing Registry
       </div>
-      <div className="mt-5 bg-obsidian border border-green/8 p-5 max-w-lg">
-        <div className="text-[9px] tracking-[2px] text-ash uppercase mb-3">Payout Schedule</div>
-        <div className="space-y-2 text-[10px] text-fog">
-          <div className="flex justify-between"><span>Payout date</span><span className="text-green">15th of every month</span></div>
-          <div className="flex justify-between"><span>Processing time</span><span className="text-ash">1–3 business days</span></div>
-          <div className="flex justify-between"><span>Minimum payout</span><span className="text-ash">₹1,000</span></div>
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12">
+        <div className="lg:col-span-3 bg-white border border-navy/10 p-6 md:p-10 shadow-md space-y-6 md:space-y-8">
+          {[{key:'account_number',label:'Primary Bank Account',ph:'0000 0000 0000 0000'},{key:'ifsc_code',label:'Registry IFSC Code',ph:'SBIN0001234'},{key:'upi_id',label:'Secondary UPI Protocol',ph:'8lines.investor@upi'}].map(f=>(
+            <div key={f.key}>
+              <label className="text-[8px] md:text-[9px] tracking-[3px] md:tracking-[4px] text-ash uppercase block mb-3 font-black">{f.label}</label>
+              <input value={(form as any)[f.key]} onChange={e=>setForm(p=>({...p,[f.key]:e.target.value}))} placeholder={f.ph} className={inp} />
+            </div>
+          ))}
+          <button onClick={save} className="w-full bg-navy text-void text-[9px] md:text-[10px] tracking-[3px] md:tracking-[4px] uppercase py-4 md:py-5 font-black hover:bg-green transition-all cut-sm">SECURE PAYOUT ROUTING →</button>
+        </div>
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-void border border-navy/10 p-6 md:p-8 shadow-sm">
+            <div className="text-[9px] md:text-[10px] tracking-[3px] md:tracking-[4px] text-navy uppercase mb-6 font-black flex items-center gap-2 md:gap-3">
+              <span className="w-5 md:w-6 h-px bg-green" /> Disbursment Schedule
+            </div>
+            <div className="space-y-6">
+              {[
+                {l:'Payout Sequence', v:'15th of Every Month', g:true},
+                {l:'Protocol Window', v:'09:00 - 18:00 IST', g:false},
+                {l:'Minimum Threshold', v:'₹1,000 Net Yield', g:false},
+              ].map(r=>(
+                <div key={r.l} className="border-b border-navy/5 pb-4 last:border-0 last:pb-0">
+                  <div className="text-[7px] md:text-[8px] text-ash font-black uppercase tracking-[2px] mb-2">{r.l}</div>
+                  <div className={`text-[11px] md:text-[12px] font-bold ${r.g?'text-green':'text-navy'}`}>{r.v}</div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
   )
 }
+
 
 function DocumentVaultTab() {
   const [docs, setDocs] = useState<any[]>([])
@@ -519,35 +708,36 @@ function DocumentVaultTab() {
 
   return (
     <div>
-      <div className="text-[9px] tracking-[3px] text-ash uppercase mb-4">Document Vault — Your Legal Archive</div>
-      <div className="bg-void border border-navy/10 overflow-hidden mb-4 shadow-sm">
-        {loading ? [1,2].map(i => <div key={i} className="h-16 animate-pulse bg-navy/5 m-2"/>) : docs.map((d, i) => (
-          <div key={i} className="flex items-center justify-between px-5 py-4 border-b border-navy/5 hover:bg-navy/[.02] transition-colors group">
-            <div className="flex items-center gap-4">
-              <span className="text-xl">{d.icon}</span>
+      <div className="text-[9px] md:text-[10px] tracking-[3px] md:tracking-[4px] text-navy uppercase font-black mb-8 flex items-center gap-2 md:gap-3">
+        <span className="w-6 md:w-8 h-px bg-navy" /> Document Vault — Encrypted Legal Archive
+      </div>
+      <div className="bg-white border border-navy/10 shadow-md overflow-hidden mb-8">
+        {loading ? [1,2].map(i => <div key={i} className="h-20 animate-pulse bg-navy/5 m-4"/>) : docs.map((d, i) => (
+          <div key={i} className="flex flex-col sm:flex-row items-center justify-between px-6 md:px-10 py-5 md:py-6 border-b border-navy/5 hover:bg-navy/[.01] transition-all group gap-4">
+            <div className="flex items-center gap-4 md:gap-6">
+              <span className="text-2xl md:text-3xl grayscale group-hover:grayscale-0 transition-all">{d.icon}</span>
               <div>
-                <div className="text-[11px] text-navy font-bold mb-0.5">{d.name}</div>
-                <div className="text-[9px] text-ash font-medium">{d.type} · {new Date(d.date).toLocaleDateString()}</div>
+                <div className="text-[12px] md:text-[13px] text-navy font-black mb-1 uppercase tracking-tight">{d.name}</div>
+                <div className="text-[8px] md:text-[9px] text-ash font-black uppercase tracking-[1.5px] md:tracking-[2px]">{d.type} · EXECUTION DATE: {new Date(d.date).toLocaleDateString()}</div>
               </div>
             </div>
-            <div className="flex items-center gap-4 shrink-0">
-              <a href={d.url} target="_blank" rel="noopener noreferrer"
-                className="text-[8px] tracking-[2px] text-green border border-green/25 px-5 py-2 hover:bg-green/10 transition-all font-bold uppercase">
-                View PDF ↗
-              </a>
-            </div>
+            <a href={d.url} target="_blank" rel="noopener noreferrer"
+              className="w-full sm:w-auto text-center text-[8px] md:text-[9px] tracking-[2px] md:tracking-[3px] text-navy border-2 border-navy/10 px-6 md:px-8 py-2.5 md:py-3 hover:bg-navy hover:text-void transition-all font-black uppercase shadow-sm">
+              VIEW PROTOCOL ↗
+            </a>
           </div>
         ))}
         {!loading && docs.length === 0 && (
-          <div className="p-20 text-center text-ash text-[11px] font-medium italic">Your document vault is currently empty. Assets under onboarding will appear here after activation.</div>
+          <div className="p-20 md:p-32 text-center text-ash text-[11px] md:text-[12px] font-bold tracking-[2px] md:tracking-[3px] uppercase italic">Initializing Document Encryption...</div>
         )}
       </div>
-      <div className="bg-navy/5 border border-navy/5 p-5 text-[10px] text-ash font-medium italic">
-        🔐 All documents stored in AWS S3 with AES-256 encryption. Only you and authorised 8-Lines executives can access your vault.
+      <div className="bg-navy border-l-4 border-green p-6 md:p-8 text-[10px] md:text-[11px] text-void/40 font-medium leading-relaxed max-w-2xl">
+        🔐 SECURITY PROTOCOL: All documents are stored in AWS S3 (Mumbai Region) with AES-256 server-side encryption. Access is restricted via IAM policies and signed URLs.
       </div>
     </div>
   )
 }
+
 
 function AddAssetTab() {
   const [asset, setAsset]  = useState(1500000)
@@ -560,94 +750,84 @@ function AddAssetTab() {
   const roi    = Math.round((annual / asset) * 100)
 
   return (
-    <div className="grid grid-cols-2 gap-8">
-      <div>
-        <div className="text-[9px] tracking-[3px] text-ash uppercase mb-4">Add a Second Asset — ROI Preview</div>
-        <div className="bg-obsidian border border-green/12 overflow-hidden mb-6">
-          <div className="bg-green/6 border-b border-green/10 px-5 py-3 flex items-center justify-between">
-            <div className="flex gap-2"><div className="w-2.5 h-2.5 rounded-full bg-red/70"/><div className="w-2.5 h-2.5 rounded-full bg-amber/70"/><div className="w-2.5 h-2.5 rounded-full bg-green"/></div>
-            <span className="text-[8px] tracking-[3px] text-green uppercase">Asset ROI Predictor</span>
-            <span className="text-[8px] text-green flex items-center gap-1"><span className="w-1.5 h-1.5 bg-green rounded-full" style={{animation:'blink 2s infinite'}}/>LIVE</span>
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12">
+      <div className="lg:col-span-3">
+        <div className="text-[9px] md:text-[10px] tracking-[3px] md:tracking-[4px] text-navy uppercase font-black mb-8 flex items-center gap-2 md:gap-3">
+          <span className="w-6 md:w-8 h-px bg-green" /> Portfolio Expansion Calculator
+        </div>
+        <div className="bg-white border border-navy/10 shadow-lg overflow-hidden">
+          <div className="bg-navy/5 border-b border-navy/10 px-6 md:px-8 py-4 flex items-center justify-between">
+            <span className="text-[9px] md:text-[10px] tracking-[3px] md:tracking-[4px] text-navy uppercase font-black">Strategic Yield Predictor</span>
+            <span className="text-[8px] md:text-[10px] text-green font-black flex items-center gap-2 md:gap-3"><span className="w-2 h-2 bg-green rounded-full animate-blink" />LIVE PROTOCOL</span>
           </div>
-          <div className="p-6 space-y-5">
+          <div className="p-6 md:p-10 space-y-8 md:space-y-10">
             <div>
-              <div className="flex justify-between mb-3">
-                <span className="text-[9px] tracking-[2px] text-ash uppercase">Asset Market Value</span>
-                <span className="font-display text-2xl text-green">₹{asset.toLocaleString('en-IN')}</span>
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-2">
+                <span className="text-[9px] md:text-[10px] tracking-[2px] md:tracking-[3px] text-ash uppercase font-black">Asset Capital Value</span>
+                <span className="font-display text-3xl md:text-4xl text-navy">₹{asset.toLocaleString('en-IN')}</span>
               </div>
               <input type="range" min={500000} max={3000000} step={50000} value={asset}
-                onChange={e=>{const v=+e.target.value;setAsset(v);e.target.style.setProperty('--val',`${((v-500000)/2500000)*100}%`)}}
-                style={{'--val':`${((asset-500000)/2500000)*100}%`} as React.CSSProperties} />
+                onChange={e=>setAsset(+e.target.value)} className="w-full h-1 accent-navy cursor-pointer" />
             </div>
             <div>
-              <div className="flex justify-between mb-3">
-                <span className="text-[9px] tracking-[2px] text-ash uppercase">Monthly Rental Days</span>
-                <span className="font-display text-2xl text-green">{days} days</span>
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-2">
+                <span className="text-[9px] md:text-[10px] tracking-[2px] md:tracking-[3px] text-ash uppercase font-black">Projected Deployment Days</span>
+                <span className="font-display text-3xl md:text-4xl text-navy">{days} days</span>
               </div>
               <input type="range" min={8} max={28} step={1} value={days}
-                onChange={e=>{const v=+e.target.value;setDays(v);e.target.style.setProperty('--val',`${((v-8)/20)*100}%`)}}
-                style={{'--val':`${((days-8)/20)*100}%`} as React.CSSProperties} />
+                onChange={e=>setDays(+e.target.value)} className="w-full h-1 accent-navy cursor-pointer" />
             </div>
-            <div className="grid grid-cols-2 gap-px bg-green/8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-navy/5 border border-navy/5">
               {[
-                {label:'Gross Monthly',     val:`₹${gross.toLocaleString('en-IN')}`, cls:'text-pearl'},
-                {label:'Platform Fee 30%',  val:`-₹${fee.toLocaleString('en-IN')}`,  cls:'text-fog'},
-                {label:'Mechanix Est.',     val:`-₹${mech.toLocaleString('en-IN')}`, cls:'text-fog'},
-                {label:'Net Monthly Yield', val:`₹${net.toLocaleString('en-IN')}`,   cls:'text-green'},
+                {label:'Gross Forecast', val:`₹${gross.toLocaleString('en-IN')}`, cls:'text-navy', g:false},
+                {label:'Platform Fee (30%)', val:`-₹${fee.toLocaleString('en-IN')}`, cls:'text-ash', g:false},
+                {label:'Mechanix Expense', val:`-₹${mech.toLocaleString('en-IN')}`, cls:'text-ash', g:false},
+                {label:'Net Passive Yield', val:`₹${net.toLocaleString('en-IN')}`, cls:'text-green', g:true},
               ].map(r=>(
-                <div key={r.label} className="bg-obsidian p-4">
-                  <div className="text-[8px] text-fog mb-2">{r.label}</div>
-                  <div className={`font-display text-xl ${r.cls}`}>{r.val}</div>
+                <div key={r.label} className="bg-void p-5 md:p-6 text-center sm:text-left">
+                  <div className="text-[8px] md:text-[9px] text-ash mb-2 md:mb-3 font-black uppercase tracking-[1.5px] md:tracking-[2px]">{r.label}</div>
+                  <div className={`font-display text-2xl md:text-2xl ${r.cls}`}>{r.val}</div>
                 </div>
               ))}
-              <div className="col-span-2 bg-obsidian p-4 flex items-center justify-between">
-                <div>
-                  <div className="text-[8px] text-fog mb-1">Annual Passive Income</div>
-                  <div className="font-display text-3xl text-green glow-green">₹{annual.toLocaleString('en-IN')}</div>
+              <div className="col-span-1 sm:col-span-2 bg-void p-6 md:p-8 border-t border-navy/5 flex flex-col sm:flex-row items-center justify-between gap-6">
+                <div className="text-center sm:text-left">
+                  <div className="text-[9px] md:text-[10px] text-ash font-black uppercase tracking-[2px] md:tracking-[3px] mb-2">Annualized Net Consolidation</div>
+                  <div className="font-display text-4xl md:text-5xl text-navy tracking-tight">₹{annual.toLocaleString('en-IN')}</div>
                 </div>
-                <div className="text-center">
-                  <div className="font-display text-5xl text-green glow-green">{roi}%</div>
-                  <div className="text-[8px] text-fog">Annual ROI</div>
+                <div className="text-center sm:text-right">
+                  <div className="font-display text-5xl md:text-6xl text-green glow-green">{roi}%</div>
+                  <div className="text-[9px] md:text-[10px] text-ash font-black uppercase tracking-widest mt-2">{roi>25?'EXCEPTIONAL YIELD':'Estimated Yield Efficiency'}</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <div>
-        <div className="text-[9px] tracking-[3px] text-ash uppercase mb-4">Start Second Asset Onboarding</div>
-        <div className="bg-obsidian border border-green/10 p-6 space-y-4">
-          <p className="text-[11px] text-fog leading-relaxed">You already have 1 active asset earning <span className="text-green">₹24,800/month</span>. Add a second vehicle to your portfolio and double your passive income stream.</p>
-          <div className="space-y-3">
-            {['Same 70/30 split — same transparency','Same MECHANIX PRO protection','₹5,000 onboarding fee applies','Can be a different vehicle make/model'].map(b=>(
-              <div key={b} className="flex items-center gap-3 text-[10px] text-ash">
-                <span className="text-green text-[8px]">✓</span>{b}
+      <div className="lg:col-span-2">
+        <div className="text-[9px] md:text-[10px] tracking-[3px] md:tracking-[4px] text-navy uppercase font-black mb-8 flex items-center gap-2 md:gap-3">
+          <span className="w-6 md:w-8 h-px bg-navy" /> Expansion Gateway
+        </div>
+        <div className="bg-void border border-navy/10 p-8 md:p-10 shadow-sm space-y-6 md:space-y-8">
+          <p className="text-[13px] md:text-[14px] text-ash font-medium leading-relaxed">
+            Secondary Asset Protocol: Expand your passive income strategy by deploying additional vehicles to the 8-Lines fleet.
+          </p>
+          <div className="space-y-4">
+            {['Unified 70/30 yield abstract','Encapsulated MECHANIX PRO health audits','Asset-specific digital agreements','Real-time ledger multi-asset support'].map(b=>(
+              <div key={b} className="flex gap-3 text-[10px] md:text-[11px] text-navy font-black uppercase tracking-wider md:tracking-widest">
+                <span className="text-green shrink-0">✓</span>{b}
               </div>
             ))}
           </div>
           <a href="/investor#form"
-            className="block w-full bg-green text-void text-[9px] tracking-[3px] uppercase py-4 text-center font-medium cut-sm hover:bg-green-dim transition-all">
-            ADD SECOND ASSET →
+            className="block w-full bg-navy text-void text-[10px] md:text-[11px] tracking-[4px] md:tracking-[5px] uppercase py-5 md:py-6 text-center font-black hover:bg-green transition-all cut-sm shadow-xl">
+            EXPAND PORTFOLIO →
           </a>
-        </div>
-        <div className="mt-4 bg-obsidian border border-green/8 p-5">
-          <div className="text-[9px] tracking-[2px] text-ash uppercase mb-3">Multi-Asset Advantage</div>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              {label:'2 Assets Annual',val:`₹${(annual*2).toLocaleString('en-IN')}`,g:true},
-              {label:'Combined ROI',   val:`${roi}%`, g:true},
-            ].map(s=>(
-              <div key={s.label} className="bg-deep border border-green/8 p-4">
-                <div className="text-[8px] text-fog mb-1">{s.label}</div>
-                <div className={`font-display text-xl ${s.g?'text-green glow-green':'text-white'}`}>{s.val}</div>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </div>
   )
 }
+
 
 export default function DashboardPage() {
   const { user, logout, loadUser } = useAuthStore()
@@ -657,61 +837,103 @@ export default function DashboardPage() {
   const [trips, setTrips] = useState<Trip[]>([])
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem('8l_user_type') === 'renter') {
+      router.push('/drive/dashboard')
+      return;
+    }
     loadUser().then(()=>{ if(!useAuthStore.getState().user) router.push('/login') })
     investorAPI.getStats().then(r=>setStats(r.data)).catch(()=>{})
     investorAPI.getTrips().then(r=>setTrips(r.data?.trips||[])).catch(()=>{})
   },[])
 
   return (
-    <main className="min-h-screen bg-void flex flex-col">
+    <main className="min-h-screen bg-[#F8FAFC] flex flex-col">
       {/* Topbar */}
-      <div className="fixed top-0 left-0 right-0 z-50 h-[68px] bg-void border-b border-navy/10 flex items-center justify-between px-6 shadow-sm">
+      <div className="fixed top-0 left-0 right-0 z-50 h-[68px] bg-white border-b border-navy/8 flex items-center justify-between px-4 md:px-6 shadow-sm">
         <div className="flex items-center gap-4">
-          <a href="/" className="font-display text-xl tracking-[5px] text-navy hover:text-green transition-colors"><em className="text-green not-italic">8</em>LINES</a>
-          <div className="text-[8px] tracking-[3px] text-green border border-green/20 px-2 py-1 font-bold">INVESTOR PORTAL</div>
+          <a href="/" className="flex items-center gap-2">
+            <DynamicLogo className="h-8 w-auto text-navy" />
+          </a>
+          <div className="h-6 w-px bg-navy/10 hidden sm:block" />
+          <div className="text-[10px] tracking-[3px] text-green border border-green/25 px-3 py-1 font-black uppercase hidden sm:block bg-green/5 rounded-sm">INVESTOR PORTAL</div>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-[8px] text-ash font-bold"><span className="w-1.5 h-1.5 bg-green rounded-full" style={{animation:'blink 2s infinite'}}/>OTP SECURED</div>
-          <span className="text-[9px] text-navy font-bold">{user?.name||user?.phone||'Investor'}</span>
-          <a href="/" className="text-[8px] text-ash hover:text-navy border border-navy/10 px-3 py-2 uppercase transition-all font-bold">← Home</a>
-          <button onClick={logout} className="text-[8px] tracking-[2px] text-ash hover:text-red transition-colors uppercase border border-navy/10 px-3 py-2 font-bold">Logout</button>
+        <div className="flex items-center gap-3 md:gap-4">
+          <div className="hidden md:flex items-center gap-2 bg-green/5 border border-green/15 px-3 py-1.5 rounded-sm">
+            <span className="w-1.5 h-1.5 bg-green rounded-full animate-pulse" />
+            <span className="text-[11px] text-green font-black uppercase tracking-widest">SECURED</span>
+          </div>
+          <span className="text-[13px] text-navy font-black truncate max-w-[120px] md:max-w-none">{user?.name||user?.phone||'Investor'}</span>
+          <a href="/" className="text-[11px] text-navy/40 hover:text-navy border border-navy/10 px-3 py-2 uppercase transition-all font-bold hidden sm:block rounded-sm">← Home</a>
+          <button onClick={logout} className="text-[11px] tracking-[2px] text-white bg-navy hover:bg-orange transition-colors uppercase border-0 px-4 py-2 font-black rounded-sm">Logout</button>
         </div>
       </div>
 
-      <div className="flex flex-1 pt-[68px]">
+      <div className="flex flex-1 pt-[68px] flex-col lg:flex-row">
         {/* Sidebar */}
-        <div className="w-[240px] bg-void border-r border-navy/10 fixed top-[68px] bottom-0 left-0 overflow-y-auto scrollbar-green shadow-sm">
-          <div className="p-6 border-b border-navy/5 bg-navy/5">
-            <div className="w-12 h-12 bg-white border border-navy/10 flex items-center justify-center text-xl mb-4 shadow-sm">👤</div>
-            <div className="text-[12px] text-navy font-bold mb-1">{user?.name||user?.phone||'Investor'}</div>
-            <div className="text-[8px] tracking-[2px] text-green font-bold uppercase">{user?.kycVerified?'VERIFIED ACTIVE':'KYC PENDING'}</div>
+        <div className="w-full lg:w-[260px] bg-white border-b lg:border-b-0 lg:border-r border-navy/8 lg:fixed lg:top-[68px] lg:bottom-0 lg:left-0 overflow-x-auto lg:overflow-y-auto scrollbar-none z-40 shadow-md">
+          {/* User Profile */}
+          <div className="hidden lg:block p-6 border-b border-navy/5 bg-navy relative overflow-hidden">
+            <div className="absolute inset-0 pointer-events-none opacity-5" style={{backgroundImage:`radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,backgroundSize:'20px 20px'}} />
+            <div className="relative z-10">
+              <div className="w-12 h-12 bg-white/10 border border-white/20 rounded-sm flex items-center justify-center text-2xl mb-4">👤</div>
+              <div className="text-[15px] text-white font-black truncate uppercase tracking-tight leading-tight mb-1">{user?.name||user?.phone||'Investor'}</div>
+              <div className="flex items-center gap-2">
+                 <div className={`w-2 h-2 rounded-full ${user?.kycVerified?'bg-green animate-pulse':'bg-orange animate-pulse'}`} />
+                 <span className={`text-[11px] font-black uppercase tracking-wider ${user?.kycVerified?'text-green':'text-orange'}`}>
+                   {user?.kycVerified?'KYC Verified':'KYC Pending'}
+                 </span>
+              </div>
+            </div>
           </div>
-          <div className="py-4">
-            {NAV.map((n,i)=>(
-              <div key={n.id}>
-                {i===5&&<div className="h-px bg-navy/5 my-4 mx-6"/>}
-                {i===9&&<div className="h-px bg-navy/5 my-4 mx-6"/>}
+          
+          <div className="flex lg:flex-col p-2 lg:py-4 min-w-max lg:min-w-0">
+            <div className="hidden lg:block px-5 pt-4 pb-2">
+               <div className="text-[10px] tracking-[4px] text-navy/25 uppercase font-black">NAVIGATION</div>
+            </div>
+            {NAV.map((n) => (
+              <div key={n.id} className="flex">
                 <button onClick={()=>setTab(n.id)}
-                  className={`w-full flex items-center gap-4 px-6 py-4 text-[9px] tracking-[3px] uppercase text-left transition-all border-l-4 font-bold ${tab===n.id?'text-green border-green bg-green/5':'text-ash border-transparent hover:text-navy hover:bg-navy/5'}`}>
-                  <span className="text-[12px]">{n.icon}</span>{n.label}
+                  className={`flex items-center gap-3 px-5 py-3.5 lg:py-4 text-[12px] tracking-[1px] uppercase text-left transition-all border-b-2 lg:border-b-0 lg:border-l-4 font-black whitespace-nowrap w-full ${
+                    tab===n.id
+                      ?'text-navy border-orange bg-orange/5 shadow-inner'
+                      :'text-navy/40 border-transparent hover:text-navy hover:bg-navy/5'
+                  }`}>
+                  <span className={`text-[16px] transition-all ${tab===n.id?'scale-110':''}`}>{n.icon}</span>
+                  <span className="hidden sm:inline">{n.label}</span>
+                  <span className="sm:hidden">{n.short || n.label.split(' ')[0]}</span>
                 </button>
               </div>
             ))}
+            
+            {/* Market Watch */}
+            <div className="hidden lg:block mt-6 px-5 pt-6 border-t border-navy/5">
+                <div className="text-[10px] tracking-[4px] text-navy/25 uppercase font-black mb-4">MARKET DEMAND</div>
+                <div className="space-y-4">
+                    {MARKET_DEMAND.map((m, i) => (
+                      <div key={i} className="flex justify-between items-center">
+                          <span className="text-[12px] text-navy font-bold">{m.model}</span>
+                          <span className={`text-[12px] font-black ${m.trend==='up'?'text-green':'text-orange'}`}>{m.demand}</span>
+                      </div>
+                    ))}
+                </div>
+            </div>
           </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 ml-[240px] p-8">
-          {tab==='overview'  && <OverviewTab stats={stats}/>}
-          {tab==='ledger'    && <LedgerTab trips={trips}/>}
-          {tab==='fleet'     && <FleetTab/>}
-          {tab==='calendar'  && <CalendarTab stats={stats}/>}
-          {tab==='tickets'   && <TicketsTab/>}
-          {tab==='tax'       && <TaxTab/>}
-          {tab==='kyc'       && <KYCTab/>}
-          {tab==='bank'      && <BankTab/>}
-          {tab==='documents' && <DocumentVaultTab/>}
-          {tab==='addasset'  && <AddAssetTab/>}
+        <div className="flex-1 lg:ml-[260px] p-4 md:p-8 transition-all">
+          <div className="max-w-7xl mx-auto">
+            {tab==='overview'  && <OverviewTab stats={stats} setTab={setTab}/>}
+            {tab==='ledger'    && <LedgerTab trips={trips}/>}
+            {tab==='fleet'     && <FleetTab/>}
+            {tab==='calendar'  && <CalendarTab stats={stats}/>}
+            {tab==='tickets'   && <TicketsTab/>}
+            {tab==='tax'       && <TaxTab/>}
+            {tab==='kyc'       && <KYCTab/>}
+            {tab==='bank'      && <BankTab/>}
+            {tab==='documents' && <DocumentVaultTab/>}
+            {tab==='addasset'  && <AddAssetTab/>}
+          </div>
         </div>
       </div>
     </main>

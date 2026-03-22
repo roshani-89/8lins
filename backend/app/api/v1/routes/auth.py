@@ -1,4 +1,5 @@
 import random, httpx
+from typing import Optional
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
@@ -15,6 +16,8 @@ _otp_store: dict = {}
 
 class SendOTPRequest(BaseModel):
     phone: str
+    name: Optional[str] = None
+    email: Optional[str] = None
 
 class VerifyOTPRequest(BaseModel):
     phone: str
@@ -26,11 +29,16 @@ def send_otp_fast2sms(phone: str, otp: str):
         print(f"[DEV] OTP for {phone}: {otp}")
         return
     import httpx
-    httpx.post(
-        "https://www.fast2sms.com/dev/bulkV2",
-        headers={"authorization": settings.FAST2SMS_API_KEY},
-        params={"variables_values": otp, "route": "otp", "numbers": phone}
-    )
+    try:
+        httpx.post(
+            "https://www.fast2sms.com/dev/bulkV2",
+            headers={"authorization": settings.FAST2SMS_API_KEY},
+            params={"variables_values": otp, "route": "otp", "numbers": phone},
+            timeout=5.0
+        )
+    except Exception as e:
+        print(f"[ERROR] Fast2SMS integration failed: {str(e)}")
+        # We catch the exception so that the user can still proceed via [DEV] mock OTPs if the gateway is down!
 
 @router.post("/send-otp")
 def send_otp(req: SendOTPRequest, db: Session = Depends(get_db)):
@@ -47,6 +55,8 @@ def send_otp(req: SendOTPRequest, db: Session = Depends(get_db)):
 
     _otp_store[phone] = {
         "otp": otp,
+        "name": req.name,
+        "email": req.email,
         "expires": datetime.utcnow() + timedelta(minutes=5),
         "attempts": 0
     }
@@ -78,7 +88,12 @@ def verify_otp(req: VerifyOTPRequest, db: Session = Depends(get_db)):
     
     if not user:
         role = "admin" if phone in admin_list else "investor"
-        user = User(phone=phone, role=role)
+        user = User(
+            phone=phone, 
+            role=role,
+            name=record.get("name"),
+            email=record.get("email")
+        )
         db.add(user)
     else:
         # Re-sync role if added to admin list

@@ -13,6 +13,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     const move = (e: MouseEvent) => { mx = e.clientX; my = e.clientY }
     document.addEventListener('mousemove', move)
 
+    // Cursor hover logic via event delegation (Higher performance)
+    const handleMouseOver = (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).closest('a, button, .clickable')
+      if (target) {
+        document.body.classList.add('cursor-hover')
+      } else {
+        document.body.classList.remove('cursor-hover')
+      }
+    }
+    document.addEventListener('mouseover', handleMouseOver)
+
     let raf: number
     const loop = () => {
       rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12
@@ -22,27 +33,31 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     }
     loop()
 
-    const hoverOn  = () => document.body.classList.add('cursor-hover')
-    const hoverOff = () => document.body.classList.remove('cursor-hover')
-    const attach = () => {
-      document.querySelectorAll('a,button,.clickable').forEach(el => {
-        el.addEventListener('mouseenter', hoverOn)
-        el.addEventListener('mouseleave', hoverOff)
+    // Intersection Observer for Reveal elements
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => { 
+        if (e.isIntersecting) { 
+          e.target.classList.add('in'); 
+          obs.unobserve(e.target) 
+        } 
       })
+    }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' })
+
+    const attachReveal = () => {
+      document.querySelectorAll('.reveal:not(.in), .reveal-l:not(.in), .reveal-r:not(.in)').forEach(el => obs.observe(el))
     }
-    attach()
-    const mo = new MutationObserver(attach)
+    
+    attachReveal()
+    const mo = new MutationObserver(attachReveal)
     mo.observe(document.body, { childList: true, subtree: true })
 
-    const obs = new IntersectionObserver(entries => {
-      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); obs.unobserve(e.target) } })
-    }, { threshold: 0.08 })
-    const attachReveal = () => document.querySelectorAll('.reveal,.reveal-l,.reveal-r').forEach(el => obs.observe(el))
-    attachReveal()
-    const mo2 = new MutationObserver(attachReveal)
-    mo2.observe(document.body, { childList: true, subtree: true })
-
-    return () => { document.removeEventListener('mousemove', move); cancelAnimationFrame(raf); mo.disconnect(); mo2.disconnect() }
+    return () => { 
+      document.removeEventListener('mousemove', move)
+      document.removeEventListener('mouseover', handleMouseOver)
+      cancelAnimationFrame(raf)
+      mo.disconnect()
+      obs.disconnect()
+    }
   }, [])
 
   return (
@@ -77,7 +92,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             fontWeight: '600',
             letterSpacing: '0.5px',
             borderRadius: '0px',
-            boxShadow: '0 10px 30px rgba(12,29,54,.08)'
+            boxShadow: '0 10px 30px rgba(12, 29, 54, .08)'
           }
         }} />
       </body>

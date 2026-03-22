@@ -177,6 +177,8 @@ class Onboarding(Base):
     payment_order_id    = Column(String(200), nullable=True)
     payment_status      = Column(Enum("pending","paid","failed", name="payment_status"), default="pending")
     razorpay_payment_id = Column(String(200), nullable=True)
+    pan_s3_key          = Column(String(500), nullable=True)
+    aadhaar_s3_key      = Column(String(500), nullable=True)
     created_at          = Column(DateTime, default=datetime.utcnow)
 
 # ── BankDetail ───────────────────────────────────────────────────────

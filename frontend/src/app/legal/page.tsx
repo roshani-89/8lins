@@ -17,31 +17,31 @@ export default function LegalPage() {
       <Navbar />
       <div className="pt-[68px]">
         {/* Header */}
-        <div className="bg-void border-b border-navy/5 px-20 py-12 relative overflow-hidden">
+        <div className="bg-void border-b border-navy/5 px-6 md:px-20 py-10 md:py-16 relative overflow-hidden">
           <div className="absolute inset-0 pointer-events-none" style={{background:'radial-gradient(ellipse 60% 60% at 80% 50%,rgba(12,29,54,.02),transparent)'}} />
-          <div className="text-[8px] tracking-[5px] text-green uppercase mb-3 flex items-center gap-3 font-bold relative z-10"><span className="w-8 h-px bg-green"/>Legal Documents</div>
-          <h1 className="font-display text-[clamp(46px,5vw,72px)] text-navy leading-[.92] relative z-10">LEGAL &<br/><em className="text-green not-italic">COMPLIANCE.</em></h1>
-          <p className="text-[11px] text-ash mt-4 max-w-lg font-medium relative z-10">8-Lines Group operates with institutional-grade legal documentation. All agreements are executed via clickwrap with IP address and UTC timestamp logging.</p>
+          <div className="text-[8px] tracking-[4px] md:tracking-[5px] text-green uppercase mb-3 flex items-center gap-3 font-bold relative z-10"><span className="w-8 h-px bg-green"/>Legal Documents</div>
+          <h1 className="font-display text-[clamp(36px,5vw,72px)] text-navy leading-[0.85] relative z-10 uppercase">LEGAL &<br/><em className="text-green not-italic">COMPLIANCE.</em></h1>
+          <p className="text-[11px] md:text-[12px] text-ash mt-4 max-w-lg font-medium relative z-10 leading-relaxed">8-Lines Group operates with institutional-grade legal documentation. All agreements are executed via clickwrap with IP address and UTC timestamp logging.</p>
         </div>
 
-        <div className="flex">
-          {/* Sidebar */}
-          <div className="w-64 shrink-0 bg-abyss border-r border-navy/5 min-h-screen pt-8">
+        <div className="flex flex-col md:flex-row">
+          {/* Sidebar / Tabs */}
+          <div className="w-full md:w-64 shrink-0 bg-abyss border-b md:border-b-0 md:border-r border-navy/5 flex md:flex-col overflow-x-auto custom-scrollbar">
             {TABS.map(t=>(
               <button key={t.id} onClick={()=>setTab(t.id)}
-                className={`w-full text-left px-8 py-4 text-[9px] tracking-[2px] uppercase transition-all border-l-2 font-bold ${tab===t.id?'text-green border-green bg-green/5':'text-ash border-transparent hover:text-navy hover:bg-navy/5'}`}>
+                className={`flex-1 md:flex-none text-center md:text-left px-6 md:px-8 py-4 md:py-5 text-[9px] tracking-[2px] uppercase transition-all border-b-2 md:border-b-0 md:border-l-2 font-bold whitespace-nowrap ${tab===t.id?'text-green border-green bg-green/5':'text-ash border-transparent hover:text-navy hover:bg-navy/5'}`}>
                 {t.label}
               </button>
             ))}
           </div>
 
           {/* Content */}
-          <div className="flex-1 px-16 py-12 max-w-4xl">
+          <div className="flex-1 px-6 md:px-16 py-10 md:py-12 max-w-4xl">
 
             {tab==='terms' && (
               <div className="prose-legal">
-                <div className="text-[8px] tracking-[3px] text-green uppercase mb-2">Effective Date: 01 January 2026</div>
-                <h2 className="font-display text-4xl text-navy mb-8">TERMS OF SERVICE</h2>
+                <div className="text-[8px] tracking-[3px] text-green uppercase mb-2 font-bold">Effective Date: 01 January 2026</div>
+                <h2 className="font-display text-3xl md:text-4xl text-navy mb-8 uppercase leading-tight">TERMS OF SERVICE</h2>
                 {[
                   {title:'1. Acceptance of Terms', body:'By accessing or using the 8-Lines Group platform (8linesgroup.com), you agree to be bound by these Terms of Service. If you do not agree, do not use the platform.'},
                   {title:'2. Platform Description', body:'8-Lines Group operates a dual-sided marketplace connecting vehicle investors (Asset Partners) with corporate and individual vehicle renters. 8-Lines acts as the operator, not the owner or insurer of any vehicle.'},
@@ -53,7 +53,7 @@ export default function LegalPage() {
                   {title:'8. Governing Law', body:'These terms are governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of courts in Bengaluru, Karnataka.'},
                 ].map(s=>(
                   <div key={s.title} className="mb-8 border-b border-navy/5 pb-8">
-                    <h3 className="text-[11px] tracking-[2px] text-navy font-bold mb-3">{s.title}</h3>
+                    <h3 className="text-[11px] tracking-[2px] text-navy font-bold mb-3 uppercase">{s.title}</h3>
                     <p className="text-[11px] leading-[2] text-ash font-medium">{s.body}</p>
                   </div>
                 ))}
@@ -62,8 +62,8 @@ export default function LegalPage() {
 
             {tab==='privacy' && (
               <div className="prose-legal">
-                <div className="text-[8px] tracking-[3px] text-green uppercase mb-2">Effective Date: 01 January 2026</div>
-                <h2 className="font-display text-4xl text-navy mb-8">PRIVACY POLICY</h2>
+                <div className="text-[8px] tracking-[3px] text-green uppercase mb-2 font-bold">Effective Date: 01 January 2026</div>
+                <h2 className="font-display text-3xl md:text-4xl text-navy mb-8 uppercase leading-tight">PRIVACY POLICY</h2>
                 {[
                   {title:'1. Data We Collect', body:'We collect: mobile number (for OTP authentication), KYC documents (PAN card, Aadhaar card), vehicle registration details, bank account details (for payouts), and IP address and timestamp (for legal e-signature compliance).'},
                   {title:'2. How We Use Your Data', body:'Your data is used exclusively to: operate the 8-Lines platform, process payouts, verify your identity as required by Indian law, and provide platform support. We do not sell your data.'},
@@ -74,7 +74,7 @@ export default function LegalPage() {
                   {title:'7. Your Rights', body:'You may request access to, correction of, or deletion of your personal data by contacting support@8linesgroup.com. Some data cannot be deleted due to legal retention requirements.'},
                 ].map(s=>(
                   <div key={s.title} className="mb-8 border-b border-navy/5 pb-8">
-                    <h3 className="text-[11px] tracking-[2px] text-navy font-bold mb-3">{s.title}</h3>
+                    <h3 className="text-[11px] tracking-[2px] text-navy font-bold mb-3 uppercase">{s.title}</h3>
                     <p className="text-[11px] leading-[2] text-ash font-medium">{s.body}</p>
                   </div>
                 ))}
@@ -83,12 +83,12 @@ export default function LegalPage() {
 
             {tab==='agreement' && (
               <div className="prose-legal">
-                <div className="bg-amber/5 border border-amber/25 p-4 mb-8 text-[10px] text-amber leading-relaxed">
+                <div className="bg-orange/5 border border-orange/20 p-5 mb-8 text-[10px] text-orange leading-relaxed font-bold uppercase tracking-wide">
                   ⚠ This is the public view of the Master Asset Management Agreement. The executed version, with your IP address, timestamp, and digital signature, will be emailed to you upon completion of onboarding.
                 </div>
-                <div className="text-[8px] tracking-[3px] text-green uppercase mb-2">Document Ref: 8L-MAMA-2026-v3</div>
-                <h2 className="font-display text-4xl text-navy mb-2">MASTER ASSET MANAGEMENT AGREEMENT</h2>
-                <p className="text-[10px] text-ash mb-8 font-medium">Between: 8-Lines Group (Operator) and the Asset Partner (Investor)</p>
+                <div className="text-[8px] tracking-[3px] text-green uppercase mb-2 font-bold">Document Ref: 8L-MAMA-2026-v3</div>
+                <h2 className="font-display text-3xl md:text-4xl text-navy mb-2 uppercase leading-tight">MASTER ASSET MANAGEMENT AGREEMENT</h2>
+                <p className="text-[10px] text-ash mb-8 font-bold uppercase tracking-wider">Between: 8-Lines Group (Operator) and the Asset Partner (Investor)</p>
                 {[
                   {title:'1. Engagement Duration', body:'This Agreement is effective for a period of nine (9) calendar months from the date of execution. Either party may terminate with 30 days written notice after the initial 9-month lock-in period.'},
                   {title:'2. Revenue Sharing', body:'The Operator shall retain 30% of Gross Revenue generated by the Asset as its Platform Fee. The remaining 70% constitutes the Asset Partner\'s Net Yield. This split is fixed and cannot be unilaterally modified by the Operator.'},
@@ -101,13 +101,13 @@ export default function LegalPage() {
                   {title:'9. Legal Execution', body:'This Agreement is executed electronically. By checking the "I Agree" box on the 8-Lines platform, the Asset Partner acknowledges reading and accepting all terms. The platform records the IP address, UTC timestamp, and device fingerprint as legal proof of execution under Section 10A of the Information Technology Act, 2000.'},
                 ].map(s=>(
                   <div key={s.title} className="mb-8 border-b border-navy/5 pb-8">
-                    <h3 className="text-[11px] tracking-[2px] text-navy font-bold mb-3">{s.title}</h3>
+                    <h3 className="text-[11px] tracking-[2px] text-navy font-bold mb-3 uppercase">{s.title}</h3>
                     <p className="text-[11px] leading-[2] text-ash font-medium">{s.body}</p>
                   </div>
                 ))}
-                <div className="mt-8 bg-green/5 border border-green/20 p-6">
-                  <p className="text-[10px] text-ash mb-4">Ready to deploy your asset under this agreement?</p>
-                  <a href="/investor#form" className="inline-flex items-center gap-3 bg-green text-void text-[9px] tracking-[3px] uppercase px-8 py-4 font-medium cut-sm hover:bg-green-dim transition-all">
+                <div className="mt-8 bg-green/5 border border-green/20 p-6 md:p-8">
+                  <p className="text-[11px] text-ash mb-4 font-bold uppercase tracking-wide">Ready to deploy your asset under this agreement?</p>
+                  <a href="/investor#form" className="inline-flex items-center gap-3 bg-green text-void text-[10px] tracking-[3px] uppercase px-8 py-5 font-bold cut-md hover:bg-green-dim transition-all w-full sm:w-auto text-center justify-center">
                     Start Onboarding →
                   </a>
                 </div>

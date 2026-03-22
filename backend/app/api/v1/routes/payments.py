@@ -58,10 +58,16 @@ def verify_payment(req: VerifyPayment, db: Session = Depends(get_db)):
                 name=onboarding.full_name,
                 email=onboarding.email,
                 role="investor",
-                kyc_verified=False
+                kyc_verified=False,
+                pan_s3_key=onboarding.pan_s3_key,
+                aadhaar_s3_key=onboarding.aadhaar_s3_key
             )
             db.add(user)
             db.flush()
+        else:
+            # If user existed, update KYC keys if they were provided during onboarding
+            if onboarding.pan_s3_key: user.pan_s3_key = onboarding.pan_s3_key
+            if onboarding.aadhaar_s3_key: user.aadhaar_s3_key = onboarding.aadhaar_s3_key
         
         # Create Vehicle
         vehicle = Vehicle(

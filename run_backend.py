@@ -4,10 +4,10 @@ import os
 
 os.chdir(r'd:\version6car\8lines\backend')
 
-python_exe = r'C:\Users\dell\AppData\Local\Programs\Python\Python312\python.exe'
+python_exe = r'.\venv\Scripts\python.exe'
 
-# Upgrade setuptools
-subprocess.run([python_exe, '-m', 'pip', 'install', '--upgrade', 'setuptools'])
+# Pin setuptools (latest versions remove pkg_resources, breaking razorpay 1.4.1)
+subprocess.run([python_exe, '-m', 'pip', 'install', 'setuptools==69.5.1'])
 
 # Install requirements
 subprocess.run([python_exe, '-m', 'pip', 'install', '-r', 'requirements.txt'])

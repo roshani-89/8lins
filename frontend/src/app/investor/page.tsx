@@ -1,82 +1,132 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import Link from 'next/link'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
 import { publicAPI } from '@/lib/api'
-import { MechanixLogo } from '@/components/ui/Logos'
 
-/* ── Reveal ──────────────────────────────────── */
+/* ── Reveal Animations ─────────────────────────── */
 function useReveal() {
   useEffect(() => {
-    const els = document.querySelectorAll('.reveal,.reveal-l,.reveal-r')
-    const io = new IntersectionObserver(entries => entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('in') }), {threshold:.08})
-    els.forEach(el => io.observe(el))
-    return () => io.disconnect()
+    const handler = () => {
+      document.querySelectorAll('.rv:not(.in), .rv-l:not(.in), .rv-r:not(.in)').forEach(el => {
+        const rect = el.getBoundingClientRect()
+        if (rect.top < window.innerHeight * 0.9) el.classList.add('in')
+      })
+    }
+    handler()
+    window.addEventListener('scroll', handler, { passive: true })
+    return () => window.removeEventListener('scroll', handler)
   }, [])
 }
 
-/* ── ROI Calculator ──────────────────────────── */
+/* ── Live Ticker Numbers ─────────────────────────── */
+function CountUp({ target, prefix = '', suffix = '' }: { target: number, prefix?: string, suffix?: string }) {
+  const [val, setVal] = useState(0)
+  const ref = useRef<HTMLSpanElement>(null)
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) return
+      let start = 0
+      const step = target / 60
+      const t = setInterval(() => {
+        start = Math.min(start + step, target)
+        setVal(Math.round(start))
+        if (start >= target) clearInterval(t)
+      }, 16)
+      obs.disconnect()
+    })
+    if (ref.current) obs.observe(ref.current)
+    return () => obs.disconnect()
+  }, [target])
+  return <span ref={ref}>{prefix}{val.toLocaleString('en-IN')}{suffix}</span>
+}
+
+/* ── ROI Calculator ────────────────────────────── */
 function ROICalc() {
   const [asset, setAsset] = useState(1500000)
-  const [days,  setDays]  = useState(18)
+  const [days, setDays] = useState(18)
   const gross = Math.round(asset * 0.0025 * days)
   const fee   = Math.round(gross * 0.30)
   const mech  = Math.round(gross * 0.05)
   const net   = gross - fee - mech
   const annual = net * 12
   const roi   = Math.round((annual / asset) * 100)
+  const roiColor = roi >= 24 ? '#22C55E' : roi >= 18 ? '#F8931F' : '#64748B'
 
   return (
-    <div className="bg-void border border-navy/10 overflow-hidden shadow-xl">
-      <div className="bg-navy/5 border-b border-navy/10 px-6 py-4 flex items-center justify-between">
-        <span className="text-[8px] tracking-[4px] text-navy uppercase font-bold">Asset ROI Predictor</span>
-        <span className="flex items-center gap-1.5 text-[8px] text-green font-bold">
-          <span className="w-1.5 h-1.5 rounded-full bg-green" style={{animation:'blink 2s infinite'}} />LIVE
-        </span>
-      </div>
-      <div className="p-7 space-y-6">
-        <div>
-          <div className="flex justify-between items-center mb-3">
-            <span className="text-[9px] tracking-[3px] text-ash uppercase font-bold">Asset Market Value</span>
-            <span className="font-display text-3xl text-orange">₹{asset.toLocaleString('en-IN')}</span>
+    <div className="relative">
+      {/* Glow orb */}
+      <div className="absolute -inset-10 bg-orange/10 blur-[80px] rounded-full pointer-events-none" />
+      
+      <div className="relative bg-white border border-navy/5 shadow-[0_40px_80px_-20px_rgba(12,29,54,0.15)] overflow-hidden" style={{clipPath:'polygon(20px 0,100% 0,100% calc(100% - 20px),calc(100% - 20px) 100%,0 100%,0 20px)'}}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-8 py-5 bg-navy border-b-0 relative">
+          <div>
+            <div className="text-[9px] tracking-[5px] text-orange uppercase font-black mb-1">LIVE CALCULATOR</div>
+            <div className="font-display text-xl text-white uppercase tracking-widest">YIELD PREDICTOR</div>
           </div>
-          <input type="range" min={500000} max={3000000} step={50000} value={asset}
-            onChange={e => setAsset(+e.target.value)} className="w-full accent-orange h-1 cursor-pointer" />
-          <div className="flex justify-between text-[8px] text-fog mt-1"><span>₹5L</span><span>₹30L</span></div>
-        </div>
-        <div>
-          <div className="flex justify-between items-center mb-3">
-            <span className="text-[9px] tracking-[3px] text-ash uppercase font-bold">Rental Days / Month</span>
-            <span className="font-display text-3xl text-orange">{days} days</span>
+          <div className="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-sm">
+            <span className="w-2 h-2 rounded-full bg-green animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
+            <span className="text-[10px] text-white font-black tracking-[3px] uppercase">LIVE</span>
           </div>
-          <input type="range" min={8} max={28} step={1} value={days}
-            onChange={e => setDays(+e.target.value)} className="w-full accent-orange h-1 cursor-pointer" />
         </div>
-        <div className="grid grid-cols-2 gap-px bg-navy/5">
+
+        {/* Sliders */}
+        <div className="p-8 space-y-8 border-b border-navy/5 bg-navy/[0.01]">
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <span className="text-[10px] tracking-[4px] text-navy/40 uppercase font-black">Asset Value</span>
+              <span className="font-display text-3xl text-navy">₹{asset.toLocaleString('en-IN')}</span>
+            </div>
+            <div className="relative h-2 bg-navy/5 rounded-full">
+              <div className="absolute h-full bg-gradient-to-r from-orange/50 to-orange rounded-full transition-all" style={{width:`${((asset-500000)/(3000000-500000))*100}%`}} />
+            </div>
+            <input type="range" min={500000} max={3000000} step={50000} value={asset}
+              onChange={e => setAsset(+e.target.value)} className="w-full opacity-0 absolute cursor-pointer" style={{marginTop:'-8px',height:'16px'}} />
+          </div>
+
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <span className="text-[10px] tracking-[4px] text-navy/40 uppercase font-black">Deployment Days / Month</span>
+              <span className="font-display text-3xl text-navy">{days} <span className="text-[14px] text-navy/40">days</span></span>
+            </div>
+            <div className="relative h-2 bg-navy/5 rounded-full">
+              <div className="absolute h-full bg-gradient-to-r from-orange/50 to-orange rounded-full transition-all" style={{width:`${((days-8)/(28-8))*100}%`}} />
+            </div>
+            <input type="range" min={8} max={28} step={1} value={days}
+              onChange={e => setDays(+e.target.value)} className="w-full opacity-0 absolute cursor-pointer" style={{marginTop:'-8px',height:'16px'}} />
+          </div>
+        </div>
+
+        {/* Breakdown Grid */}
+        <div className="grid grid-cols-2 divide-x divide-y divide-navy/5 border-b border-navy/5">
           {[
-            {l:'Gross Monthly',   v:`₹${gross.toLocaleString('en-IN')}`,  c:'text-navy'},
-            {l:'Platform Fee 30%',v:`-₹${fee.toLocaleString('en-IN')}`,   c:'text-fog'},
-            {l:'Mechanix Est. 5%',v:`-₹${mech.toLocaleString('en-IN')}`,  c:'text-fog'},
-            {l:'Your 70% Net',    v:`₹${net.toLocaleString('en-IN')}`,     c:'text-green'},
-          ].map(r=>(
-            <div key={r.l} className="bg-void p-4">
-              <div className="text-[8px] text-ash mb-1 uppercase tracking-wide">{r.l}</div>
-              <div className={`font-display text-2xl ${r.c}`}>{r.v}</div>
+            {l:'Gross Revenue', v:`₹${gross.toLocaleString('en-IN')}`, c:'text-navy'},
+            {l:'Platform Fee (30%)', v:`−₹${fee.toLocaleString('en-IN')}`, c:'text-navy/30'},
+            {l:'Mechanix Reserve', v:`−₹${mech.toLocaleString('en-IN')}`, c:'text-navy/30'},
+            {l:'YOUR NET PROFIT', v:`₹${net.toLocaleString('en-IN')}`, c:'text-green font-black'},
+          ].map(r => (
+            <div key={r.l} className="p-6 bg-white hover:bg-navy/[0.01] transition-colors group">
+              <div className="text-[9px] text-navy/30 mb-2 uppercase tracking-[3px] font-black">{r.l}</div>
+              <div className={`font-display text-2xl ${r.c} group-hover:scale-105 transition-transform origin-left`}>{r.v}</div>
             </div>
           ))}
         </div>
-        <div className="bg-orange/5 border border-orange/20 p-5 flex items-center justify-between">
+
+        {/* Annual Result */}
+        <div className="p-8 bg-navy flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div>
-            <div className="text-[8px] tracking-[3px] text-orange uppercase mb-1 font-bold">Annual Yield</div>
-            <div className="font-display text-4xl text-navy">₹{annual.toLocaleString('en-IN')}</div>
+            <div className="text-[9px] tracking-[4px] text-white/30 uppercase font-black mb-2">Annualised Net Yield</div>
+            <div className="font-display text-5xl text-white tracking-tight">₹{annual.toLocaleString('en-IN')}</div>
           </div>
-          <div className="text-right">
-            <div className="font-display text-4xl text-orange">{roi}%</div>
-            <div className="text-[8px] text-ash mt-1 uppercase tracking-wider">Estimated ROI</div>
+          <div className="text-center sm:text-right">
+            <div className="font-display text-7xl font-black" style={{color: roiColor, textShadow:`0 0 40px ${roiColor}40`}}>{roi}%</div>
+            <div className="text-[9px] tracking-[4px] text-white/30 uppercase font-black mt-1">NET ROI / YEAR</div>
           </div>
         </div>
       </div>
@@ -84,497 +134,476 @@ function ROICalc() {
   )
 }
 
-/* ── Comparison Table ─────────────────────────── */
-const COMPARE = [
-  {f:'Revenue Split',    t:'~60% + hidden reversals', u:'70% Net — Guaranteed'},
-  {f:'GPS / Telematics', t:'₹499/month host pays',    u:'₹0 — Covered by us'},
-  {f:'Maintenance',      t:"Host's responsibility",   u:'MECHANIX PRO managed'},
-  {f:'Guest Liability',  t:'Hosts absorb losses',     u:'Direct lease agreements'},
-  {f:'Ledger',           t:'Opaque, delayed',         u:'Real-time trip-by-trip'},
-  {f:'Tax Export',       t:'None provided',           u:'One-click CA Export'},
-  {f:'Legal Agreement',  t:'Platform favoured',       u:'Clickwrap + IP logging'},
+/* ── Stats Strip ──────────────────────────────── */
+const STATS = [
+  {n:'₹4.82L', l:'Avg. Annual Yield'},
+  {n:'92%',    l:'Fleet Utilisation'},
+  {n:'70/30',  l:'Guaranteed Split'},
+  {n:'22pt',   l:'Pre-Trip Audit'},
+  {n:'24hrs',  l:'OTP-Secured Access'},
 ]
 
-/* ── Onboarding Schema ─────────────────────────── */
+/* ── Comparison Table ──────────────────────────── */
+const COMPARE = [
+  {f:'Revenue Cut',     t:'~60% + hidden fees',    u:'70% NET — Contractual'},
+  {f:'Maintenance',     t:"Owner's burden",         u:'MECHANIX PRO Covered'},
+  {f:'GPS Tracking',   t:'₹499/mo extra',          u:'₹0 — Platform Included'},
+  {f:'Guest Liability', t:'Host absorbs loss',      u:'Direct lease, zero risk'},
+  {f:'Financial Ledger',t:'Opaque & delayed',       u:'Real-time trip-by-trip'},
+  {f:'Tax Export',      t:'Not provided',           u:'1-Click CA-ready Excel'},
+  {f:'Legal Agreement', t:'Generic T&Cs',           u:'Audit-logged MAMA'},
+]
+
+/* ── Contact Schema ───────────────────────────── */
 const schema = z.object({
-  fullName:     z.string().min(3, 'Min 3 characters'),
-  phone:        z.string().regex(/^[6-9]\d{9}$/, 'Valid 10-digit mobile required'),
-  email:        z.string().email('Valid email required'),
-  address:      z.string().min(5, 'Address required'),
-  vehicleMake:  z.string().min(1, 'Select vehicle make'),
-  vehicleModel: z.string().min(1, 'Model required'),
-  vehicleYear:  z.coerce.number().min(2015).max(2026),
-  regNumber:    z.string().min(5, 'Registration number required'),
-  assetValue:   z.coerce.number().min(500000, 'Minimum ₹5,00,000'),
+  name:    z.string().min(2, 'Name required'),
+  phone:   z.string().regex(/^[6-9]\d{9}$/, 'Valid 10-digit number'),
+  email:   z.string().email('Valid email required'),
+  vehicle: z.string().min(2, 'Vehicle details required'),
 })
-type F = z.infer<typeof schema>
 
-/* ── The 4-Step Onboarding Gateway ─────────────── */
-function OnboardingGateway() {
-  const [step, setStep] = useState(1)
-  const [agreed, setAgreed] = useState(false)
-  const [onboardingId, setOnboardingId] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [panFile, setPanFile] = useState<File|null>(null)
-  const [aadharFile, setAadharFile] = useState<File|null>(null)
-
-  const { register, handleSubmit, formState:{errors}, getValues, trigger } = useForm<F>({ resolver: zodResolver(schema) })
-
-  const STEPS = [
-    {n:1, label:'Asset Details',     sub:'Vehicle & Owner Info'},
-    {n:2, label:'Digital Agreement', sub:'9-Month Master Contract'},
-    {n:3, label:'KYC Verification',  sub:'PAN & Aadhar Upload'},
-    {n:4, label:'₹5,000 Activation', sub:'Razorpay — UPI / Cards'},
-  ]
-
-  const nextStep = async () => {
-    if (step === 1) {
-      const ok = await trigger(['fullName','phone','email','address','vehicleMake','vehicleModel','vehicleYear','regNumber','assetValue'])
-      if (!ok) return
-    }
-    if (step === 2 && !agreed) { toast.error('Accept the Master Agreement to proceed'); return }
-    setStep(s => s + 1)
-  }
-
-  const submitOnboarding = async (data: F) => {
-    if (!agreed) { toast.error('Accept the Master Agreement to proceed'); return }
-    setLoading(true)
-    try {
-      const res = await publicAPI.submitOnboarding({ ...data, agreementAccepted: true })
-      setOnboardingId(res.data.id)
-      setStep(3)
-    } catch { toast.error('Submission failed. Try again.') }
-    finally { setLoading(false) }
-  }
-
-  const submitKYC = async () => {
-    if (!panFile || !aadharFile) { toast.error('Upload both PAN and Aadhar'); return }
-    setLoading(true)
-    await new Promise(r => setTimeout(r, 800))
-    toast.success('✓ KYC documents uploaded securely to AWS S3')
-    setLoading(false)
-    setStep(4)
-  }
-
-  const processPayment = async () => {
-    setLoading(true)
-    try {
-      const orderRes = await publicAPI.createOrder(onboardingId || 'demo-id')
-      const script = document.createElement('script')
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js'
-      document.body.appendChild(script)
-      script.onload = () => {
-        const rzp = new (window as any).Razorpay({
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY || 'rzp_test_demo',
-          amount: 500000,
-          currency: 'INR',
-          name: '8-Lines Group',
-          description: 'Investor Onboarding Fee — Non-refundable',
-          order_id: orderRes.data.order_id,
-          prefill: { name: getValues('fullName'), contact: getValues('phone'), email: getValues('email') },
-          theme: { color: '#F8931F' },
-          handler: async (resp: any) => {
-            await publicAPI.verifyPayment(resp)
-            toast.success('✓ Payment verified! Your dashboard is now active.')
-            setTimeout(() => window.location.href = '/login', 2000)
-          },
-        })
-        rzp.open()
-      }
-    } catch {
-      toast.error('Payment initiation failed. Contact support.')
-    } finally { setLoading(false) }
-  }
-
-  const inp = "w-full bg-void border border-navy/10 hover:border-navy/30 focus:border-orange px-4 py-3 text-[12px] text-navy font-mono outline-none transition-all placeholder:text-navy/20"
-
-  return (
-    <div id="form" className="bg-void border border-navy/10 shadow-2xl overflow-hidden">
-      {/* Progress Bar */}
-      <div className="bg-navy/5 border-b border-navy/10 px-7 py-5">
-        <div className="flex items-center gap-0 mb-4">
-          {STEPS.map((s,i) => (
-            <div key={s.n} className="flex items-center flex-1">
-              <div className={`w-9 h-9 rounded-full border-2 flex items-center justify-center text-[10px] font-bold shrink-0 transition-all ${
-                step > s.n ? 'bg-green border-green text-void' :
-                step === s.n ? 'bg-orange border-orange text-void' :
-                'border-navy/15 text-ash'
-              }`}>
-                {step > s.n ? '✓' : s.n}
-              </div>
-              {i < STEPS.length - 1 && (
-                <div className={`flex-1 h-px transition-all ${step > s.n ? 'bg-green' : 'bg-navy/10'}`} />
-              )}
-            </div>
-          ))}
-        </div>
-        <div className="flex justify-between">
-          {STEPS.map(s => (
-            <div key={s.n} className="text-center" style={{width:'22%'}}>
-              <div className={`text-[8px] font-bold uppercase tracking-wide ${step===s.n?'text-orange':step>s.n?'text-green':'text-ash/50'}`}>{s.label}</div>
-              <div className="text-[7px] text-fog">{s.sub}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="p-7">
-        {/* ── STEP 1: Asset Details ── */}
-        {step === 1 && (
-          <div className="space-y-5">
-            <div className="text-[8px] tracking-[4px] text-orange uppercase mb-5 font-bold">Step 1 of 4 — Asset & Owner Details</div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-[8px] tracking-[3px] text-ash uppercase block mb-2 font-bold">Full Legal Name</label>
-                <input {...register('fullName')} className={inp} placeholder="As per Aadhar Card" />
-                {errors.fullName && <p className="text-[8px] text-red mt-1">{errors.fullName.message}</p>}
-              </div>
-              <div>
-                <label className="text-[8px] tracking-[3px] text-ash uppercase block mb-2 font-bold">Mobile Number</label>
-                <input {...register('phone')} type="tel" className={inp} placeholder="+91 98XXXXXXXX" />
-                {errors.phone && <p className="text-[8px] text-red mt-1">{errors.phone.message}</p>}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-[8px] tracking-[3px] text-ash uppercase block mb-2 font-bold">Email Address</label>
-                <input {...register('email')} type="email" className={inp} placeholder="you@example.com" />
-                {errors.email && <p className="text-[8px] text-red mt-1">{errors.email.message}</p>}
-              </div>
-              <div>
-                <label className="text-[8px] tracking-[3px] text-ash uppercase block mb-2 font-bold">Permanent Address</label>
-                <input {...register('address')} className={inp} placeholder="City, Karnataka" />
-              </div>
-            </div>
-            <div className="border-t border-navy/5 pt-5">
-              <div className="text-[8px] tracking-[3px] text-orange uppercase mb-4 font-bold">Vehicle Details</div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="text-[8px] tracking-[2px] text-ash uppercase block mb-2 font-bold">Make</label>
-                  <select {...register('vehicleMake')} className={inp + ' bg-void'}>
-                    <option value="">Select Make</option>
-                    {['Mahindra','Kia','Nissan','Hyundai','Maruti','Tata','Toyota','Honda','MG'].map(m=><option key={m}>{m}</option>)}
-                  </select>
-                  {errors.vehicleMake && <p className="text-[8px] text-red mt-1">{errors.vehicleMake.message}</p>}
-                </div>
-                <div>
-                  <label className="text-[8px] tracking-[2px] text-ash uppercase block mb-2 font-bold">Model</label>
-                  <input {...register('vehicleModel')} className={inp} placeholder="e.g. Thar Roxx" />
-                  {errors.vehicleModel && <p className="text-[8px] text-red mt-1">{errors.vehicleModel.message}</p>}
-                </div>
-                <div>
-                  <label className="text-[8px] tracking-[2px] text-ash uppercase block mb-2 font-bold">Year</label>
-                  <input {...register('vehicleYear')} type="number" className={inp} placeholder="2022" />
-                  {errors.vehicleYear && <p className="text-[8px] text-red mt-1">{errors.vehicleYear.message}</p>}
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <div>
-                  <label className="text-[8px] tracking-[2px] text-ash uppercase block mb-2 font-bold">Registration No.</label>
-                  <input {...register('regNumber')} className={inp} placeholder="KA04 XXXXXXX" />
-                  {errors.regNumber && <p className="text-[8px] text-red mt-1">{errors.regNumber.message}</p>}
-                </div>
-                <div>
-                  <label className="text-[8px] tracking-[2px] text-ash uppercase block mb-2 font-bold">Asset Market Value (₹)</label>
-                  <input {...register('assetValue')} type="number" className={inp} placeholder="1500000" />
-                  {errors.assetValue && <p className="text-[8px] text-red mt-1">{errors.assetValue.message}</p>}
-                </div>
-              </div>
-            </div>
-            <button onClick={nextStep} className="w-full bg-orange text-void text-[10px] tracking-[4px] uppercase py-4 font-bold hover:bg-orange-dim hover:shadow-[0_0_40px_rgba(248,147,31,.4)] transition-all cut-md">
-              Continue to Digital Agreement →
-            </button>
-          </div>
-        )}
-
-        {/* ── STEP 2: Digital Agreement ── */}
-        {step === 2 && (
-          <div className="space-y-5">
-            <div className="text-[8px] tracking-[4px] text-orange uppercase mb-5 font-bold">Step 2 of 4 — Master Asset Management Agreement</div>
-            <div className="bg-navy/5 border border-navy/10 overflow-hidden">
-              <div className="bg-navy/10 border-b border-navy/10 px-4 py-2 text-[8px] tracking-[3px] text-navy uppercase font-bold">9-Month Master Agreement — Read Carefully</div>
-              <div className="h-48 overflow-y-auto p-5 text-[10px] leading-[1.9] text-ash font-body space-y-3">
-                <p>The Asset Owner (&quot;Investor&quot;) hereby deploys the above-registered vehicle to 8-Lines Group (&quot;Platform&quot;) for a term of <strong>9 months</strong> from the date of execution.</p>
-                <p><strong>Revenue Split:</strong> Revenue shall be distributed on a <strong>70% (Investor) / 30% (Platform)</strong> basis calculated on Gross Trip Revenue, after deduction of applicable MECHANIX PRO maintenance costs.</p>
-                <p><strong>Platform Obligations:</strong> 8-Lines Group shall bear all operational, telematics, GPS, and guest acquisition costs. Maintenance costs through MECHANIX PRO will be deducted at wholesale rates from the Investor&apos;s 70% with full PDF invoice transparency provided in the Investor Dashboard.</p>
-                <p><strong>Personal Use:</strong> The Investor may pause the asset for up to <strong>5 days per quarter</strong> for personal use with 48-hour advance notice, subject to no existing guest bookings on those dates.</p>
-                <p><strong>Guest Liability:</strong> 8-Lines Group executes its own physical and digital lease agreements with every guest. The Investor is not liable for guest-caused damages beyond the insurance deductible.</p>
-                <p><strong>Legal Binding:</strong> This agreement is legally binding upon clickwrap execution under Indian IT Act 2000, Section 10A. Your IP address, device fingerprint, and UTC timestamp will be cryptographically logged and a signed PDF will be automatically emailed to your registered address.</p>
-                <p><strong>Termination:</strong> Either party may terminate with 30-day written notice post the initial 9-month term. Early termination forfeits the ₹5,000 onboarding fee.</p>
-              </div>
-              <label className="flex items-start gap-4 cursor-pointer p-4 bg-void border-t border-navy/10 hover:bg-orange/[.02] transition-all group">
-                <input type="checkbox" checked={agreed} onChange={e=>setAgreed(e.target.checked)} className="mt-1 accent-orange w-4 h-4" />
-                <span className="text-[9px] text-navy font-bold uppercase leading-relaxed group-hover:text-orange transition-colors">
-                  I have read, understood, and I execute this legally binding digital agreement under the Indian IT Act 2000, Section 10A. I acknowledge my IP address and timestamp will be logged as permanent record.
-                </span>
-              </label>
-            </div>
-            <div className="bg-green/5 border border-green/15 border-l-2 border-l-green p-4">
-              <div className="text-[8px] tracking-[3px] text-green uppercase mb-2 font-bold">Security Notice</div>
-              <p className="text-[9px] leading-[1.8] text-ash">Your IP address (<strong className="text-navy">logged on submit</strong>), timestamp, and device fingerprint will be cryptographically stored. A signed PDF will be auto-emailed to your address within 2 minutes of submission.</p>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <button onClick={()=>setStep(1)} className="border border-navy/15 text-ash text-[9px] tracking-[2px] uppercase py-4 hover:border-navy/30 transition-all">
-                ← Back
-              </button>
-              <button onClick={handleSubmit(submitOnboarding)} disabled={loading}
-                className="bg-orange text-void text-[9px] tracking-[3px] uppercase py-4 font-bold hover:bg-orange-dim hover:shadow-[0_0_40px_rgba(248,147,31,.4)] disabled:opacity-60 transition-all cut-md">
-                {loading ? 'Submitting...' : 'Execute Agreement & Continue →'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── STEP 3: KYC Upload ── */}
-        {step === 3 && (
-          <div className="space-y-5">
-            <div className="text-[8px] tracking-[4px] text-orange uppercase mb-5 font-bold">Step 3 of 4 — KYC Verification</div>
-            <p className="text-[11px] text-ash leading-relaxed font-body">Upload your identity documents securely. All files are encrypted and stored in our AWS S3 vault. Required before your first payout is released.</p>
-            {[
-              {label:'PAN Card', sub:'Clear photo or PDF • Max 5MB', setter:setPanFile, value:panFile, accept:'.pdf,image/*'},
-              {label:'Aadhar Card', sub:'Front & Back • Max 5MB', setter:setAadharFile, value:aadharFile, accept:'.pdf,image/*'},
-            ].map((doc,i)=>(
-              <div key={i} className={`border-2 border-dashed p-6 transition-all ${doc.value?'border-green/40 bg-green/5':'border-navy/15 hover:border-orange/30'}`}>
-                <label className="cursor-pointer block">
-                  <input type="file" accept={doc.accept} className="hidden"
-                    onChange={e=>doc.setter(e.target.files?.[0]||null)} />
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 border flex items-center justify-center text-xl shrink-0 ${doc.value?'border-green/30 bg-green/5':'border-navy/10'}`}>
-                      {doc.value ? '✓' : '📄'}
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-navy font-bold mb-1">{doc.label}</div>
-                      <div className="text-[9px] text-ash">{doc.value ? `✓ ${doc.value.name}` : doc.sub}</div>
-                    </div>
-                    <div className="ml-auto">
-                      <span className={`text-[8px] tracking-[2px] uppercase font-bold px-3 py-1.5 border ${doc.value?'text-green border-green/30':'text-orange border-orange/30'}`}>
-                        {doc.value ? 'UPLOADED' : 'CLICK TO UPLOAD'}
-                      </span>
-                    </div>
-                  </div>
-                </label>
-              </div>
-            ))}
-            <div className="bg-navy/5 border border-navy/10 p-4 text-[9px] text-ash leading-relaxed">
-              🔐 <strong className="text-navy">AWS S3 Encrypted Storage.</strong> Documents are stored with AES-256 encryption. Only the 8-Lines compliance team can access them for KYC verification.
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <button onClick={()=>setStep(2)} className="border border-navy/15 text-ash text-[9px] tracking-[2px] uppercase py-4 hover:border-navy/30 transition-all">
-                ← Back
-              </button>
-              <button onClick={submitKYC} disabled={loading}
-                className="bg-orange text-void text-[9px] tracking-[3px] uppercase py-4 font-bold hover:bg-orange-dim disabled:opacity-60 transition-all cut-md">
-                {loading ? 'Uploading...' : 'Upload & Proceed to Payment →'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── STEP 4: Payment ── */}
-        {step === 4 && (
-          <div className="space-y-5">
-            <div className="text-[8px] tracking-[4px] text-orange uppercase mb-5 font-bold">Step 4 of 4 — Activation Payment</div>
-            <div className="bg-orange/5 border border-orange/20 p-7">
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <div className="text-[8px] tracking-[3px] text-orange uppercase mb-2 font-bold">Onboarding Activation Fee</div>
-                  <div className="font-display text-6xl text-navy leading-none">₹5,000</div>
-                  <div className="text-[9px] text-ash mt-2">One-time · Non-refundable · Activates your Investor Dashboard</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-[8px] tracking-[2px] text-orange uppercase mb-2 font-bold">Powered by</div>
-                  <div className="bg-void border border-orange/20 px-4 py-3 text-[11px] font-bold text-navy">Razorpay</div>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-2 mb-5">
-                {['UPI','Net Banking','Credit / Debit Cards'].map(m=>(
-                  <div key={m} className="border border-orange/15 px-3 py-2 text-[8px] text-ash text-center font-bold uppercase tracking-wide">✓ {m}</div>
-                ))}
-              </div>
-              <div className="border-t border-orange/10 pt-4 space-y-2 text-[9px] text-ash">
-                <div className="flex justify-between"><span>Platform Activation</span><span className="text-navy font-bold">₹5,000</span></div>
-                <div className="flex justify-between"><span>GST (18%)</span><span className="text-navy font-bold">₹900</span></div>
-                <div className="flex justify-between border-t border-orange/10 pt-2 text-[10px]"><span className="font-bold text-navy">Total Due</span><span className="text-orange font-bold text-xl">₹5,900</span></div>
-              </div>
-            </div>
-            <div className="bg-green/5 border border-green/15 p-4">
-              <div className="text-[8px] tracking-[3px] text-green uppercase mb-2 font-bold">What Happens After Payment?</div>
-              <div className="space-y-1.5 text-[9px] text-ash">
-                {[
-                  'Your Investor Dashboard activates immediately',
-                  'Welcome email + PDF agreement sent to your email',
-                  'OTP login credentials sent to your registered mobile',
-                  'MECHANIX PRO will contact you within 24 hours to pick up the vehicle',
-                ].map((pt,i)=><div key={i} className="flex items-center gap-2"><span className="text-green">✓</span>{pt}</div>)}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <button onClick={()=>setStep(3)} className="border border-navy/15 text-ash text-[9px] tracking-[2px] uppercase py-4 hover:border-navy/30 transition-all">
-                ← Back
-              </button>
-              <button onClick={processPayment} disabled={loading}
-                className="bg-orange text-void text-[10px] tracking-[4px] uppercase py-5 font-bold hover:bg-orange-dim hover:shadow-[0_0_50px_rgba(248,147,31,.5)] disabled:opacity-60 transition-all cut-md relative overflow-hidden group">
-                <span className="relative z-10">{loading ? 'Opening Razorpay...' : 'ACTIVATE — PAY ₹5,000 →'}</span>
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
+/* ═══════════════════════════════════════════════ */
+/*  PAGE                                           */
+/* ═══════════════════════════════════════════════ */
 export default function InvestorPage() {
+  const [loading, setLoading] = useState(false)
+  const { register, handleSubmit, formState: { errors }, reset } = useForm({ resolver: zodResolver(schema) })
   useReveal()
 
+  const onSubmit = async (data: any) => {
+    setLoading(true)
+    try {
+      await publicAPI.submitLead({ ...data, message: 'Investor Enquiry' })
+      toast.success('Protocol interest logged. Our team will reach out within 24 hours.')
+      reset()
+    } catch {
+      toast.error('Submission failed. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
-    <main>
-      <Navbar />
-      <div className="pt-[68px]">
+    <main className="bg-white min-h-screen selection:bg-orange/20">
+      <style>{`
+        .rv   { opacity:0; transform:translateY(40px);  transition:all 0.9s cubic-bezier(0.16,1,0.3,1); }
+        .rv-l { opacity:0; transform:translateX(-40px); transition:all 0.9s cubic-bezier(0.16,1,0.3,1); }
+        .rv-r { opacity:0; transform:translateX(40px);  transition:all 0.9s cubic-bezier(0.16,1,0.3,1); }
+        .rv.in,.rv-l.in,.rv-r.in { opacity:1; transform:none; }
+        .rv-d1 { transition-delay: 0.1s; }
+        .rv-d2 { transition-delay: 0.2s; }
+        .rv-d3 { transition-delay: 0.3s; }
+        .rv-d4 { transition-delay: 0.4s; }
+        @keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+        .ticker-inner { animation:ticker 22s linear infinite; }
+        @keyframes float-slow { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+        .float-slow { animation:float-slow 6s ease-in-out infinite; }
+        @keyframes shimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
+        .shimmer-text {
+          background: linear-gradient(90deg, #0C1D36 0%, #F8931F 40%, #22C55E 60%, #0C1D36 100%);
+          background-size: 200% auto;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          animation: shimmer 4s linear infinite;
+        }
+        input[type='range'] { -webkit-appearance:none; appearance:none; background:transparent; height:20px; }
+        input[type='range']::-webkit-slider-thumb { -webkit-appearance:none; width:22px; height:22px; background:#F8931F; border-radius:4px; cursor:pointer; box-shadow:0 0 12px rgba(248,147,31,0.5); }
+      `}</style>
 
-        {/* ── HERO ─────────────────────────────────── */}
-        <section className="py-20 px-20 bg-void relative overflow-hidden">
-          <div className="absolute inset-0 pointer-events-none" style={{background:'radial-gradient(ellipse 70% 60% at 100% 50%,rgba(12,29,54,.02),transparent)'}} />
-          <div className="reveal max-w-3xl">
-            <div className="text-[8px] tracking-[5px] text-orange uppercase mb-4 flex items-center gap-3 font-bold"><span className="w-8 h-px bg-orange" />Asset Management Protocol</div>
-            <h1 className="font-display text-[clamp(48px,6.5vw,88px)] leading-[.9] text-navy mb-6">
-              DEPLOY YOUR ASSET.<br/><em className="text-orange not-italic">EARN 70%.</em>
-            </h1>
-            <p className="text-[13px] leading-[1.9] text-ash max-w-xl mb-8 font-body">
-              8-Lines is a corporate fleet protocol. You provide the asset, we manage the guests, maintenance, and logistics. You collect the lion&apos;s share of every trip — guaranteed by contract.
-            </p>
-            <div className="flex gap-4">
-              <a href="#form" className="inline-flex items-center gap-4 bg-orange text-void text-[9px] tracking-[4px] uppercase px-8 py-4 cut-md font-bold hover:bg-orange-dim hover:shadow-[0_0_40px_rgba(248,147,31,.4)] transition-all">
-                Start the 4-Step Protocol →
-              </a>
-              <a href="#roi" className="inline-flex items-center gap-4 border border-orange/30 text-orange text-[9px] tracking-[3px] uppercase px-7 py-4 hover:bg-orange/5 hover:border-orange transition-all">
-                Calculate ROI →
-              </a>
+      <Navbar theme="light" />
+
+      {/* ── HERO ──────────────────────────────────── */}
+      <section className="relative min-h-screen flex items-center overflow-hidden bg-navy">
+        {/* Animated background grid */}
+        <div className="absolute inset-0 pointer-events-none" style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.04) 1px, transparent 0)`,
+          backgroundSize: '40px 40px'
+        }} />
+        {/* Orange glow top right */}
+        <div className="absolute top-0 right-0 w-[700px] h-[700px] bg-orange/10 blur-[150px] rounded-full pointer-events-none" />
+        {/* Green glow bottom left */}
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-green/10 blur-[120px] rounded-full pointer-events-none" />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-10 pt-32 pb-24 w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            {/* Left content */}
+            <div className="rv-l">
+              <div className="flex items-center gap-4 mb-10">
+                <div className="flex items-center gap-2 bg-green/10 border border-green/20 px-4 py-2 rounded-sm">
+                  <span className="w-2 h-2 rounded-full bg-green animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
+                  <span className="text-[10px] tracking-[4px] text-green uppercase font-black">PHASE IV OPEN</span>
+                </div>
+                <span className="text-[10px] tracking-[3px] text-white/20 uppercase font-black">Bengaluru Hub Alpha</span>
+              </div>
+
+              <h1 className="font-display text-[clamp(60px,9vw,130px)] leading-[0.85] text-white mb-6 uppercase">
+                YOUR CAR.<br/>
+                <span className="text-orange">PASSIVE</span><br/>
+                <span style={{WebkitTextStroke: '1px rgba(255,255,255,0.2)', color:'transparent'}}>INCOME.</span>
+              </h1>
+
+              <p className="text-[15px] md:text-[17px] text-white/40 font-medium leading-relaxed max-w-lg mb-12 uppercase tracking-wider">
+                India&apos;s most transparent vehicle monetisation protocol. Contractually locked 70% net yield. Zero hidden fees.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link href="/investor/onboard" className="group relative overflow-hidden bg-orange text-white px-10 py-5 font-display text-xl tracking-[4px] uppercase font-black transition-all hover:shadow-[0_0_40px_rgba(248,147,31,0.4)] metallic-shine" style={{clipPath:'polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)'}}>
+                  DEPLOY ASSET →
+                </Link>
+                <a href="#calc" className="border border-white/10 text-white/60 px-10 py-5 font-display text-xl tracking-[4px] uppercase font-black hover:border-white/30 hover:text-white transition-all" style={{clipPath:'polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)'}}>
+                  YIELD CALC
+                </a>
+              </div>
+
+              {/* Mini Stats */}
+              <div className="grid grid-cols-3 gap-px mt-14 border border-white/5 overflow-hidden" style={{clipPath:'polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)'}}>
+                {[{n:'70%',l:'Net Yield Split'},{n:'₹4.8L',l:'Avg. Annual'},{n:'92%',l:'Utilisation'}].map(s=>(
+                  <div key={s.l} className="bg-white/[0.03] p-5 text-center border-r border-white/5 last:border-0 hover:bg-white/[0.06] transition-colors">
+                    <div className="font-display text-3xl text-orange mb-1">{s.n}</div>
+                    <div className="text-[9px] text-white/30 uppercase tracking-[3px] font-black">{s.l}</div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        </section>
 
-        {/* ── ROI + COMPARE ────────────────────────── */}
-        <section id="roi" className="py-20 px-20 bg-abyss">
-          <div className="grid grid-cols-2 gap-20 mb-20">
-            <div className="reveal-l">
-              <div className="text-[8px] tracking-[5px] text-orange uppercase mb-4 flex items-center gap-3 font-bold"><span className="w-8 h-px bg-orange" />ROI Calculator</div>
-              <h2 className="font-display text-[clamp(32px,4vw,56px)] leading-[.92] text-navy mb-8">PREDICT YOUR<br/><em className="text-orange not-italic">YIELD.</em></h2>
+            {/* Right — ROI Calc preview card */}
+            <div className="rv-r float-slow">
               <ROICalc />
             </div>
-            <div className="reveal-r">
-              <div className="text-[8px] tracking-[5px] text-orange uppercase mb-4 flex items-center gap-3 font-bold"><span className="w-8 h-px bg-orange" />8-Lines vs. The Rest</div>
-              <h2 className="font-display text-[clamp(32px,4vw,56px)] leading-[.92] text-navy mb-8">8-LINES VS.<br/><em className="text-orange not-italic">THE REST.</em></h2>
-              <div className="border border-navy/10 overflow-hidden bg-void">
-                <div className="grid grid-cols-3 bg-navy/5 border-b border-navy/10">
-                  <div className="p-4 text-[8px] tracking-[2px] text-ash uppercase font-bold">Feature</div>
-                  <div className="p-4 text-[8px] tracking-[2px] text-ash uppercase font-bold border-l border-navy/5">Standard Apps</div>
-                  <div className="p-4 text-[8px] tracking-[2px] text-green uppercase font-bold border-l border-navy/5">8-Lines ⚡</div>
+          </div>
+        </div>
+
+        {/* Scroll indicator */}
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 animate-bounce">
+          <span className="text-[9px] tracking-[4px] text-white/20 uppercase font-black">SCROLL</span>
+          <div className="w-px h-10 bg-gradient-to-b from-white/20 to-transparent" />
+        </div>
+      </section>
+
+      {/* ── LIVE TICKER ─────────────────────────── */}
+      <div className="bg-orange overflow-hidden py-3.5 border-y border-orange/20">
+        <div className="ticker-inner flex whitespace-nowrap">
+          {[...Array(8)].map((_,i) => (
+            <div key={i} className="flex items-center gap-8 mx-6 shrink-0">
+              <span className="text-[11px] tracking-[4px] text-white/70 font-black uppercase">DEPLOYMENT PROTOCOL ACTIVE</span>
+              <span className="w-1.5 h-1.5 bg-white/30 rounded-full" />
+              <span className="text-[11px] tracking-[4px] text-white font-black uppercase">FORTUNEER 4x4 · ₹42.5K NET</span>
+              <span className="w-1.5 h-1.5 bg-white/30 rounded-full" />
+              <span className="text-[11px] tracking-[4px] text-white/70 font-black uppercase">THAR ROXX · ₹38.2K NET</span>
+              <span className="w-1.5 h-1.5 bg-white/30 rounded-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── PERFORMANCE STATS ────────────────────── */}
+      <section className="bg-white py-20 md:py-28 px-6 md:px-10 border-b border-navy/5">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-px bg-navy/5 border border-navy/5 overflow-hidden" style={{clipPath:'polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)'}}>
+            {STATS.map((s, i) => (
+              <div key={s.l} className={`rv rv-d${Math.min(i+1,4)} bg-white p-8 md:p-10 text-center hover:bg-navy hover:text-white group transition-all duration-500 cursor-default`}>
+                <div className="font-display text-4xl md:text-5xl text-navy group-hover:text-orange mb-3 transition-colors">{s.n}</div>
+                <div className="text-[9px] tracking-[3px] text-navy/30 group-hover:text-white/40 uppercase font-black transition-colors">{s.l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS (4 Steps) ───────────────── */}
+      <section className="bg-navy py-24 md:py-40 px-6 md:px-10 relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none" style={{backgroundImage:`radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0)`,backgroundSize:'40px 40px'}} />
+        <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-orange/5 blur-[150px] rounded-full pointer-events-none" />
+        
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="rv text-center mb-20">
+            <div className="text-[10px] tracking-[8px] text-orange uppercase font-black mb-6">ONBOARDING PROTOCOL</div>
+            <h2 className="font-display text-[clamp(44px,6vw,90px)] text-white leading-none uppercase">
+              4 STEPS TO<br/><span className="text-green">PASSIVE YIELD.</span>
+            </h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {n:'01', icon:'🚗', t:'Asset Registry',      d:'Submit vehicle RC, insurance & details to the 8-Lines encrypted vault.', c:'border-orange/20'},
+              {n:'02', icon:'🔍', t:'22-Point Verification', d:'Our Mechanix Pro team conducts a certified digital audit at Hub Alpha.', c:'border-green/20'},
+              {n:'03', icon:'📋', t:'Digital Agreement',    d:'One-click MAMA execution with IP-timestamped audit logging.', c:'border-orange/20'},
+              {n:'04', icon:'💰', t:'Node Activation',      d:'Your car goes live. Earn institutional-grade 70% net yield from day one.', c:'border-green/20'},
+            ].map((s, i) => (
+              <div key={s.n} className={`rv rv-d${i+1} group relative p-8 border ${s.c} bg-white/[0.03] hover:bg-white/[0.07] transition-all duration-500 hover:-translate-y-2`} style={{clipPath:'polygon(15px 0,100% 0,100% calc(100% - 15px),calc(100% - 15px) 100%,0 100%,0 15px)'}}>
+                <div className="absolute top-4 right-5 font-display text-8xl text-white/[0.03] group-hover:text-white/[0.06] transition-colors select-none">{s.n}</div>
+                <div className="text-4xl mb-8">{s.icon}</div>
+                <div className="text-[10px] tracking-[4px] text-orange uppercase font-black mb-3">STEP {s.n}</div>
+                <div className="font-display text-2xl text-white uppercase mb-4 leading-tight">{s.t}</div>
+                <p className="text-[13px] text-white/30 font-medium leading-relaxed">{s.d}</p>
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── ROI CALCULATOR (Full) ─────────────────── */}
+      <section id="calc" className="bg-white py-24 md:py-40 px-6 md:px-10 relative overflow-hidden">
+        <div className="absolute right-0 top-0 w-[400px] h-[400px] bg-orange/5 blur-[100px] rounded-full pointer-events-none" />
+        <div className="max-w-7xl mx-auto">
+          <div className="rv text-center mb-20">
+            <div className="text-[10px] tracking-[8px] text-orange uppercase font-black mb-6">ROI ARCHITECTURE</div>
+            <h2 className="font-display text-[clamp(44px,6vw,90px)] text-navy leading-none uppercase">
+              PROJECT YOUR<br/><span className="text-green">NET YIELD.</span>
+            </h2>
+            <p className="text-[14px] text-navy/40 mt-6 max-w-xl mx-auto uppercase tracking-wider font-medium">Adjust the sliders below. See exactly how much 70% feels like — in real rupees.</p>
+          </div>
+          <div className="max-w-3xl mx-auto rv">
+            <ROICalc />
+          </div>
+        </div>
+      </section>
+
+      {/* ── COMPARISON TABLE ──────────────────────── */}
+      <section className="bg-white py-24 md:py-32 px-6 md:px-10 border-t border-navy/5">
+        <div className="max-w-7xl mx-auto">
+          <div className="rv mb-16">
+            <div className="text-[10px] tracking-[8px] text-orange uppercase font-black mb-6 flex items-center gap-5">
+              <span className="w-12 h-px bg-orange/30" /> BENCHMARK COMPARISON
+            </div>
+            <h2 className="font-display text-[clamp(40px,5vw,80px)] text-navy leading-none uppercase">
+              WHY 8-LINES<br/><span className="text-green">HITS DIFFERENT.</span>
+            </h2>
+          </div>
+
+          <div className="rv overflow-hidden border border-navy/5 shadow-[0_20px_60px_-10px_rgba(12,29,54,0.08)]" style={{clipPath:'polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px)'}}>
+            {/* Table Head */}
+            <div className="grid grid-cols-3 bg-navy">
+              <div className="px-8 py-5 text-[10px] tracking-[3px] text-white/30 uppercase font-black">Feature</div>
+              <div className="px-8 py-5 text-[10px] tracking-[3px] text-white/30 uppercase font-black border-l border-white/5">Traditional Rental</div>
+              <div className="px-8 py-5 text-[10px] tracking-[3px] text-green uppercase font-black border-l border-white/5 flex items-center gap-3">
+                <span className="w-2 h-2 rounded-full bg-green animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
+                8-LINES INSTITUTIONAL
+              </div>
+            </div>
+            {/* Rows */}
+            {COMPARE.map((c, i) => (
+              <div key={c.f} className={`grid grid-cols-3 border-t border-navy/5 group hover:bg-orange/[0.02] transition-colors ${i%2===0?'bg-white':'bg-navy/[0.01]'}`}>
+                <div className="px-8 py-5 text-[12px] text-navy font-black uppercase tracking-tight">{c.f}</div>
+                <div className="px-8 py-5 text-[12px] text-navy/30 font-medium border-l border-navy/5">{c.t}</div>
+                <div className="px-8 py-5 border-l border-navy/5 flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-sm bg-green/10 flex items-center justify-center shrink-0">
+                    <span className="text-green text-[10px] font-black">✓</span>
+                  </div>
+                  <span className="text-[12px] text-navy font-black">{c.u}</span>
                 </div>
-                {COMPARE.map((r,i)=>(
-                  <div key={i} className="grid grid-cols-3 border-b border-navy/5 hover:bg-navy/[.02] transition-colors">
-                    <div className="p-3 text-[9px] text-ash uppercase font-bold">{r.f}</div>
-                    <div className="p-3 text-[10px] text-red/70 border-l border-navy/5 font-medium">{r.t}</div>
-                    <div className="p-3 text-[10px] text-green border-l border-navy/5 font-bold">✓ {r.u}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── MECHANIX PRO ──────────────────────────── */}
+      <section className="bg-navy py-24 md:py-40 px-6 md:px-10 relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none opacity-5" style={{backgroundImage:`radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,backgroundSize:'30px 30px'}} />
+        <div className="absolute bottom-0 left-1/3 w-[600px] h-[500px] bg-green/10 blur-[150px] rounded-full pointer-events-none" />
+        
+        <div className="max-w-7xl mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+          <div className="rv-l">
+            <div className="text-[10px] tracking-[8px] text-green uppercase font-black mb-8 flex items-center gap-5">
+              <span className="w-12 h-px bg-green/40" /> ASSET PROTECTION
+            </div>
+            <h2 className="font-display text-[clamp(40px,5vw,80px)] text-white leading-[0.9] uppercase mb-10">
+              THE <span className="text-green">MECHANIX PRO</span> ADVANTAGE.
+            </h2>
+            <p className="text-[15px] text-white/40 mb-12 font-medium leading-relaxed max-w-xl uppercase tracking-wider">
+              We don&apos;t just rent your car — we protect it using Bengaluru&apos;s most rigorous digital audit protocol. Your asset is our asset.
+            </p>
+            <div className="grid grid-cols-2 gap-6 mb-12">
+              {[
+                {t:'22-POINT AUDIT',   d:'Certified pre-trip inspection'},
+                {t:'OBD SCANNING',     d:'Real-time ECU health tracking'},
+                {t:'FOS STERILIZATION',d:'Hospital-grade interior cleaning'},
+                {t:'WEAR ANALYTICS',   d:'AI-predicted tyre & brake life'},
+              ].map(a => (
+                <div key={a.t} className="border border-white/5 p-5 hover:border-green/20 transition-colors group" style={{clipPath:'polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)'}}>
+                  <div className="text-[10px] text-green font-black tracking-[3px] uppercase mb-2 flex items-center gap-2">
+                    <span className="w-1 h-1 bg-green rounded-full" /> {a.t}
+                  </div>
+                  <p className="text-[11px] text-white/25 font-medium">{a.d}</p>
+                </div>
+              ))}
+            </div>
+            <Link href="/investor/onboard" className="inline-flex items-center gap-4 bg-green text-white px-10 py-5 font-display text-lg tracking-[4px] uppercase font-black hover:bg-green/90 transition-all hover:shadow-[0_0_30px_rgba(34,197,94,0.3)]" style={{clipPath:'polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)'}}>
+              START DEPLOYMENT →
+            </Link>
+          </div>
+
+          <div className="rv-r relative">
+            <div className="absolute -inset-10 bg-green/10 blur-[80px] rounded-full pointer-events-none" />
+            <div className="relative bg-white/[0.04] border border-white/10 p-8 md:p-10" style={{clipPath:'polygon(20px 0,100% 0,100% calc(100% - 20px),calc(100% - 20px) 100%,0 100%,0 20px)'}}>
+              <div className="flex items-center gap-5 mb-10">
+                <div className="w-16 h-16 bg-green/10 border border-green/20 flex items-center justify-center font-display text-3xl text-green">22</div>
+                <div>
+                  <div className="text-[11px] tracking-[4px] text-white uppercase font-black mb-1">Audit Protocol v4.0</div>
+                  <div className="text-[9px] tracking-[3px] text-green uppercase font-black">ZERO-DEFECT CERTIFIED</div>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {['Engine Bay Index', 'Tyre Tread Depth (>4mm)', 'Brake Fluid Water %', 'OBD Fault Reading', 'AC System Pressure', 'Interior Air Quality'].map((l,i) => (
+                  <div key={l} className="flex items-center justify-between py-3.5 border-b border-white/5 last:border-0 hover:bg-white/5 px-3 transition-colors group">
+                    <span className="text-[12px] text-white/40 font-black uppercase tracking-tight group-hover:text-white/60 transition-colors">{l}</span>
+                    <div className="flex items-center gap-3">
+                      <div className="h-1.5 w-20 bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-full bg-green rounded-full" style={{width:`${85+i*2}%`}} />
+                      </div>
+                      <span className="text-[10px] text-green font-black tracking-[3px] uppercase">OK</span>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* ── 4 STEPS OVERVIEW ─────────────────────── */}
-        <section className="py-20 px-20 bg-void">
-          <div className="reveal mb-12">
-            <div className="text-[8px] tracking-[5px] text-green uppercase mb-4 flex items-center gap-3 font-bold"><span className="w-8 h-px bg-green" />Protocol</div>
-            <h2 className="font-display text-[clamp(32px,4vw,56px)] leading-[.92] text-navy">4 STEPS TO <em className="text-green not-italic">PASSIVE INCOME.</em></h2>
-          </div>
-          <div className="grid grid-cols-4 gap-px bg-navy/5 border border-navy/5 mb-20">
-            {[
-              {n:'01',icon:'🚗',t:'Asset Registration',  d:'Submit vehicle details — RC Book, Insurance, Make & Model. All data encrypted in AWS S3.'},
-              {n:'02',icon:'📋',t:'Digital Agreement',   d:'Execute the 9-Month Master Agreement via clickwrap. IP address and timestamp cryptographically logged.'},
-              {n:'03',icon:'🔐',t:'KYC Verification',   d:'Upload PAN Card and Aadhar securely to our encrypted AWS S3 vault for identity verification.'},
-              {n:'04',icon:'💳',t:'₹5,000 Activation',  d:'Non-refundable onboarding fee via Razorpay UPI / Cards. Activates your real-time Investor Dashboard.'},
-            ].map((s,i)=>(
-              <div key={i} className={`reveal delay-${i+1} bg-void hover:bg-abyss transition-all p-10 relative overflow-hidden group border border-transparent hover:border-navy/5`}>
-                <div className="absolute top-2 right-4 font-display text-[80px] leading-none text-navy/5 group-hover:text-navy/10 transition-colors select-none">{s.n}</div>
-                <div className="w-12 h-12 bg-navy/5 border border-navy/10 flex items-center justify-center text-xl mb-6 group-hover:border-green/30 transition-all">{s.icon}</div>
-                <div className="text-[8px] tracking-[3px] text-green uppercase mb-2 font-bold">Step {s.n}</div>
-                <div className="text-[14px] font-bold text-navy mb-3 font-body">{s.t}</div>
-                <p className="text-[11px] leading-[1.8] text-ash font-body">{s.d}</p>
-                <div className="absolute bottom-0 left-0 right-0 h-px bg-green scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
+      {/* ── ENQUIRY CTA + FORM ────────────────────── */}
+      <section id="form" className="bg-white py-24 md:py-40 px-6 md:px-10 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-orange/5 blur-[100px] rounded-full pointer-events-none" />
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-32 items-start">
+            
+            {/* Left Info */}
+            <div className="rv-l lg:sticky lg:top-32">
+              <div className="text-[10px] tracking-[8px] text-orange uppercase font-black mb-8 flex items-center gap-5">
+                <span className="w-12 h-px bg-orange/30" /> BEGIN PROTOCOL
               </div>
-            ))}
-          </div>
-
-          {/* ── Mechanix Pro Advantage ─────────────── */}
-          <div className="reveal mb-12">
-            <div className="text-[8px] tracking-[5px] text-orange uppercase mb-4 flex items-center gap-3 font-bold"><span className="w-8 h-px bg-orange" />The Mechanix Pro Advantage</div>
-            <h2 className="font-display text-[clamp(32px,4vw,56px)] leading-[.92] text-navy mb-6">YOUR ASSET, <em className="text-orange not-italic">PROTECTED.</em></h2>
-          </div>
-          <div className="grid grid-cols-3 gap-px bg-navy/5 border border-navy/5 mb-20">
-            {[
-              {icon:<MechanixLogo className="h-10 w-auto" />, tag:'22-Point Audit', t:'Digital Audit Before Every Trip', d:'Our mechanics run a mandatory 22-checkpoint digital audit before every single dispatch. The car cannot move without certification.'},
-              {icon:'📷', tag:'Photo Evidence', t:'Fail = Mandatory Photo Upload', d:'If any checkpoint fails, the mechanic must photograph the defect before proceeding. Creates an unarguable visual record before any repair spend.'},
-              {icon:'📄', tag:'Auto-Generated PDF', t:'Health Certificate on Clean Pass', d:'When all 22 checkpoints pass, the system auto-generates a Mechanix Pro Certified Health Report — your legal shield against Zoomcar damage claims.'},
-              {icon:'💰', tag:'Wholesale Cost Only', t:'Repair Cost Deducted Transparently', d:'When repairs are needed, costs are deducted at wholesale rates only — never marked up. Full PDF receipt pushed to your dashboard vault.'},
-              {icon:'📊', tag:'Real-Time Score', t:'Live Health Score on Dashboard', d:'Every investor sees their vehicle&apos;s current MECHANIX PRO health score in their dashboard, updated after every audit.'},
-              {icon:'🛡️', tag:'Legal Defensibility', t:'Instant Grievance Response', d:'When a rental platform raises a wear-and-tear claim, 8-Lines instantly downloads the Health Certificate and emails it to the Grievance Officer — proving the car&apos;s condition pre-trip.'},
-            ].map((f,i)=>(
-              <div key={i} className={`reveal delay-${Math.min(i%3+1,4)} bg-void hover:bg-abyss transition-all p-8 group relative overflow-hidden`}>
-                <div className="w-12 h-12 bg-navy/5 border border-navy/10 flex items-center justify-center mb-5 group-hover:border-orange/40 transition-all overflow-hidden p-1.5">
-                  {typeof f.icon==='string'?<span className="text-xl">{f.icon}</span>:f.icon}
-                </div>
-                <div className="text-[7px] tracking-[3px] text-orange uppercase mb-2 font-bold">{f.tag}</div>
-                <div className="text-[13px] font-bold text-navy mb-3">{f.t}</div>
-                <p className="text-[10px] leading-[1.8] text-ash">{f.d}</p>
-                <div className="absolute bottom-0 left-0 right-0 h-px bg-orange scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
-              </div>
-            ))}
-          </div>
-
-          {/* ── ONBOARDING GATEWAY FORM ─────────────── */}
-          <div className="grid grid-cols-2 gap-16 items-start" id="form">
-            {/* Left — Step Guide */}
-            <div className="reveal-l">
-              <div className="text-[8px] tracking-[5px] text-orange uppercase mb-6 flex items-center gap-3 font-bold"><span className="w-8 h-px bg-orange" />Activation Gateway</div>
-              <h2 className="font-display text-[clamp(32px,4vw,56px)] leading-[.92] text-navy mb-8">
-                BEGIN YOUR <em className="text-orange not-italic">ASSET PROTOCOL.</em>
+              <h2 className="font-display text-[clamp(40px,5vw,80px)] text-navy leading-[0.9] uppercase mb-10">
+                REGISTER<br/><span className="text-orange">YOUR ASSET.</span>
               </h2>
-              <div className="space-y-px mb-10">
+              <p className="text-[14px] text-navy/40 font-medium leading-relaxed mb-10 uppercase tracking-wider">
+                Submit your interest. Our investment team will schedule a hub visit and deploy your vehicle within 72 hours of verification.
+              </p>
+              
+              {/* Trust badges */}
+              <div className="space-y-4">
                 {[
-                  {n:1,t:'Asset Details',    s:'Vehicle & Owner Information'},
-                  {n:2,t:'Digital Agreement',s:'9-Month Master Contract + IP Log'},
-                  {n:3,t:'KYC Verification', s:'PAN & Aadhar — AWS S3 Encrypted'},
-                  {n:4,t:'₹5,000 Activation',s:'Razorpay — UPI / Net Banking / Cards'},
-                ].map((step,i)=>(
-                  <div key={i} className="flex gap-5 py-5 border-b border-navy/5 last:border-0">
-                    <div className={`w-9 h-9 rounded-full border-2 flex items-center justify-center text-[10px] shrink-0 font-bold transition-all ${step.n===1||step.n===2?'border-orange text-orange bg-orange/5':'border-navy/15 text-ash'}`}>
-                      {step.n}
+                  {i:'🔐', t:'Section 10A Compliant', d:'Audit-logged digital execution'},
+                  {i:'💵', t:'Guaranteed 70/30 Split', d:'Contractually protected payout'},
+                  {i:'📡', t:'Real-time Dashboard', d:'Live fleet & revenue tracking'},
+                ].map(b => (
+                  <div key={b.t} className="flex items-center gap-5 p-5 border border-navy/5 hover:border-orange/20 hover:bg-orange/[0.02] transition-all group" style={{clipPath:'polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)'}}>
+                    <span className="text-2xl">{b.i}</span>
+                    <div>
+                      <div className="text-[11px] text-navy font-black uppercase tracking-[2px]">{b.t}</div>
+                      <div className="text-[10px] text-navy/30 font-medium">{b.d}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Urgency */}
+              <div className="mt-10 p-6 bg-orange/5 border border-orange/20" style={{clipPath:'polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)'}}>
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="w-2 h-2 rounded-full bg-orange animate-pulse" />
+                  <span className="text-[10px] tracking-[4px] text-orange uppercase font-black">Phase IV — Limited Slots</span>
+                </div>
+                <p className="text-[12px] text-navy/50 font-medium">Currently accepting applications for Bengaluru South. Priority given to 7-seater SUVs.</p>
+              </div>
+            </div>
+
+            {/* Right — Form */}
+            <div className="rv-r">
+              <div className="bg-navy p-8 md:p-12 shadow-[0_40px_80px_-20px_rgba(12,29,54,0.3)] relative overflow-hidden" style={{clipPath:'polygon(20px 0,100% 0,100% calc(100% - 20px),calc(100% - 20px) 100%,0 100%,0 20px)'}}>
+                <div className="absolute inset-0 pointer-events-none opacity-[0.04]" style={{backgroundImage:`radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,backgroundSize:'30px 30px'}} />
+                <div className="absolute top-0 right-0 w-48 h-48 bg-orange/10 blur-[60px] rounded-full pointer-events-none" />
+                
+                <div className="relative z-10 mb-8">
+                  <div className="text-[9px] tracking-[4px] text-white/20 uppercase font-black mb-3">// SECURE PROTOCOL FORM</div>
+                  <div className="font-display text-3xl text-white uppercase">Asset Enquiry</div>
+                </div>
+                
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 relative z-10">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div>
+                      <label className="text-[9px] tracking-[4px] text-white/30 uppercase block mb-2 font-black">Full Name</label>
+                      <input {...register('name')} placeholder="Legal Name"
+                        className="w-full bg-white/5 border border-white/10 px-5 py-4 text-[13px] text-white font-bold placeholder:text-white/15 outline-none focus:border-orange/50 transition-all font-mono" />
+                      {errors.name && <span className="text-orange text-[10px] font-black mt-1.5 block">{errors.name.message as string}</span>}
                     </div>
                     <div>
-                      <div className="text-[12px] font-bold text-navy mb-1">{step.t}</div>
-                      <div className="text-[10px] text-ash">{step.s}</div>
+                      <label className="text-[9px] tracking-[4px] text-white/30 uppercase block mb-2 font-black">Mobile Number</label>
+                      <input {...register('phone')} placeholder="+91 XXXXX XXXXX"
+                        className="w-full bg-white/5 border border-white/10 px-5 py-4 text-[13px] text-white font-bold placeholder:text-white/15 outline-none focus:border-orange/50 transition-all font-mono" />
+                      {errors.phone && <span className="text-orange text-[10px] font-black mt-1.5 block">{errors.phone.message as string}</span>}
                     </div>
                   </div>
-                ))}
-              </div>
-              <div className="bg-green/5 border border-green/15 border-l-2 border-l-green p-5">
-                <div className="text-[8px] tracking-[3px] text-green uppercase mb-2 font-bold">Legal Notice</div>
-                <p className="text-[10px] leading-[1.8] text-ash">Upon agreement execution, the system logs your IP address, UTC timestamp, and device fingerprint under Indian IT Act 2000 Section 10A. A signed PDF is auto-emailed to your registered address within 2 minutes.</p>
-              </div>
-            </div>
 
-            {/* Right — Live Form */}
-            <div className="reveal-r">
-              <OnboardingGateway />
+                  <div>
+                    <label className="text-[9px] tracking-[4px] text-white/30 uppercase block mb-2 font-black">Email Address</label>
+                    <input {...register('email')} placeholder="you@example.com"
+                      className="w-full bg-white/5 border border-white/10 px-5 py-4 text-[13px] text-white font-bold placeholder:text-white/15 outline-none focus:border-orange/50 transition-all font-mono" />
+                    {errors.email && <span className="text-orange text-[10px] font-black mt-1.5 block">{errors.email.message as string}</span>}
+                  </div>
+
+                  <div>
+                    <label className="text-[9px] tracking-[4px] text-white/30 uppercase block mb-2 font-black">Vehicle Model & Year</label>
+                    <input {...register('vehicle')} placeholder="e.g. 2022 Mahindra Thar 4x4"
+                      className="w-full bg-white/5 border border-white/10 px-5 py-4 text-[13px] text-white font-bold placeholder:text-white/15 outline-none focus:border-orange/50 transition-all font-mono" />
+                    {errors.vehicle && <span className="text-orange text-[10px] font-black mt-1.5 block">{errors.vehicle.message as string}</span>}
+                  </div>
+
+                  <div className="flex items-start gap-3 p-4 bg-white/5 border border-white/5">
+                    <input type="checkbox" required className="mt-0.5 h-4 w-4 accent-orange shrink-0" />
+                    <p className="text-[10px] text-white/25 leading-relaxed font-medium uppercase tracking-wider">
+                      I consent to being contacted for deployment protocol. Data is stored encrypted under 256-bit AES vault.
+                    </p>
+                  </div>
+
+                  <button type="submit" disabled={loading}
+                    className="w-full bg-orange text-white py-5 font-display text-2xl tracking-[5px] uppercase font-black hover:bg-orange/90 hover:shadow-[0_0_40px_rgba(248,147,31,0.3)] transition-all disabled:opacity-50 group" style={{clipPath:'polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)'}}>
+                    <span className="inline-flex items-center gap-4">
+                      {loading ? 'INITIALIZING...' : 'SUBMIT ENQUIRY →'}
+                    </span>
+                  </button>
+                </form>
+              </div>
+
+              {/* Or — Full Onboard Link */}
+              <div className="mt-6 text-center">
+                <p className="text-[11px] text-navy/30 font-bold uppercase tracking-widest mb-4">Ready to deploy now?</p>
+                <Link href="/investor/onboard" className="inline-flex items-center gap-3 text-orange font-black text-[12px] tracking-[4px] uppercase border-b border-orange/20 pb-1 hover:border-orange transition-colors">
+                  Complete Onboarding →
+                </Link>
+              </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <Footer />
-      </div>
+      {/* ── BIG CTA ──────────────────────────────── */}
+      <section className="bg-navy py-24 md:py-32 px-6 md:px-10 relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none opacity-5" style={{backgroundImage:`radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,backgroundSize:'50px 50px'}} />
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
+          <div className="font-display text-[30vw] text-white/[0.02] select-none uppercase font-black leading-none">70%</div>
+        </div>
+        <div className="relative z-10 max-w-7xl mx-auto text-center rv">
+          <div className="text-[10px] tracking-[10px] text-orange uppercase font-black mb-8">FINAL HANDSHAKE</div>
+          <h2 className="font-display text-[clamp(54px,10vw,140px)] text-white leading-[0.85] uppercase mb-12">
+            READY TO<br/><span className="text-orange">DEPLOY?</span>
+          </h2>
+          <p className="text-[14px] text-white/30 max-w-xl mx-auto mb-14 font-medium uppercase tracking-widest">
+            Bengaluru South is live. Drop your car in, earn 18-24% net ROI. It&apos;s that simple.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-5 justify-center">
+            <Link href="/investor/onboard" className="bg-orange text-white px-14 py-6 font-display text-2xl tracking-[6px] uppercase font-black hover:shadow-[0_0_50px_rgba(248,147,31,0.4)] hover:bg-orange/90 transition-all" style={{clipPath:'polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)'}}>
+              START ONBOARDING →
+            </Link>
+            <a href="#calc" className="border border-white/10 text-white/60 px-14 py-6 font-display text-2xl tracking-[6px] uppercase font-black hover:border-white/30 hover:text-white transition-all" style={{clipPath:'polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)'}}>
+              CALCULATE ROI
+            </a>
+          </div>
+          <p className="text-[10px] text-white/15 mt-10 font-black uppercase tracking-[5px]">// Verified institutional protocol · Est. 18–24% net annual ROI</p>
+        </div>
+      </section>
+
+      <Footer />
     </main>
   )
 }
