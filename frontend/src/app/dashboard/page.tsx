@@ -6,6 +6,9 @@ import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import type { InvestorStats, Trip } from '@/types'
 import { DynamicLogo } from '@/components/ui/Logos'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { motion, AnimatePresence } from 'framer-motion'
+import { TrendingUp, ShieldCheck, Download, Calendar, ArrowUpRight, Zap, MapPin, Search } from 'lucide-react'
 
 
 const NAV = [
@@ -30,36 +33,49 @@ const MARKET_DEMAND = [
 
 function KpiCard({label,val,change,green=false,orange=false}:{label:string;val:string;change:string;green?:boolean;orange?:boolean}) {
   return (
-    <div className={`bg-white border-l-4 ${green?'border-l-green':orange?'border-l-orange':'border-l-navy/20'} border border-navy/8 p-6 md:p-8 hover:shadow-lg transition-all duration-300 group relative overflow-hidden rounded-sm`}>
-      <div className="text-[11px] tracking-[3px] text-navy/40 uppercase mb-3 font-black">{label}</div>
-      <div className={`font-display text-3xl md:text-4xl leading-none mb-3 tracking-tight ${green?'text-green':orange?'text-orange':'text-navy'}`}>{val}</div>
+    <div className={`bg-white border-l-4 ${green?'border-l-green':orange?'border-l-orange':'border-l-navy/20'} border border-navy/8 p-6 shadow-sm hover:shadow-xl transition-all duration-300 group relative overflow-hidden rounded-sm`}>
+      <div className="text-[10px] font-bold text-ash uppercase mb-4 tracking-tight">{label}</div>
+      <div className={`font-sans text-3xl md:text-4xl font-bold tracking-tight mb-4 ${green?'text-green':orange?'text-orange':'text-navy'}`}>{val}</div>
       <div className="flex items-center gap-2">
         <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${green?'bg-green animate-pulse':orange?'bg-orange animate-pulse':'bg-navy/20'}`} />
-        <span className="text-[11px] font-bold text-navy/40">{change}</span>
+        <span className="text-[11px] font-bold text-navy/40 uppercase tracking-widest">{change}</span>
       </div>
     </div>
   )
 }
 
 
-const MONTHS = ['Oct','Nov','Dec','Jan','Feb','Mar']
-const MOCK_YIELDS = [18400, 22100, 19800, 25600, 21300, 24800]
+const CHART_DATA = [
+  { name: 'Oct', yield: 18400 },
+  { name: 'Nov', yield: 22100 },
+  { name: 'Dec', yield: 19800 },
+  { name: 'Jan', yield: 25600 },
+  { name: 'Feb', yield: 21300 },
+  { name: 'Mar', yield: 24800 },
+]
 
-function MiniChart() {
-  const max = Math.max(...MOCK_YIELDS)
+function YieldVelocityChart() {
   return (
-    <div className="flex items-end gap-2 md:gap-3 h-28 pt-4">
-      {MOCK_YIELDS.map((v,i)=>(
-        <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
-          <div className="w-full bg-green/20 border-t border-green/30 transition-all duration-700 hover:bg-green hover:shadow-glow cursor-default relative"
-            style={{height:`${(v/max)*100}%`, opacity:i===5?1:0.6}}>
-            <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-navy border border-green/30 px-3 py-1.5 text-[10px] text-green font-black whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all pointer-events-none shadow-2xl z-20 cut-sm">
-              ₹{v.toLocaleString('en-IN')}
-            </div>
-          </div>
-          <span className="text-[9px] text-ash font-black uppercase tracking-tighter opacity-40 group-hover:opacity-100 transition-opacity">{MONTHS[i]}</span>
-        </div>
-      ))}
+    <div className="h-64 sm:h-72 w-full mt-6">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={CHART_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <defs>
+            <linearGradient id="colorYield" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#22C55E" stopOpacity={0.3}/>
+              <stop offset="95%" stopColor="#22C55E" stopOpacity={0}/>
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" opacity={0.3} />
+          <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748B', fontWeight: 700}} dy={10} />
+          <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748B', fontWeight: 700}} />
+          <Tooltip 
+            contentStyle={{ backgroundColor: '#0C1D36', border: 'none', borderRadius: '4px', padding: '12px' }}
+            itemStyle={{ color: '#22C55E', fontSize: '12px', fontWeight: 'bold' }}
+            labelStyle={{ color: 'white', fontSize: '10px', marginBottom: '4px', opacity: 0.5 }}
+          />
+          <Area type="monotone" dataKey="yield" stroke="#22C55E" strokeWidth={3} fillOpacity={1} fill="url(#colorYield)" />
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   )
 }
@@ -69,132 +85,215 @@ function OverviewTab({stats, setTab}:{stats:InvestorStats|null, setTab: (t:strin
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {[1,2,3].map(i=>(
-          <div key={i} className="bg-void border border-navy/5 p-8 animate-pulse shadow-sm">
-            <div className="h-2 bg-navy/5 w-24 mb-6 rounded"/><div className="h-12 bg-navy/5 w-40 mb-4 rounded"/><div className="h-2 bg-navy/5 w-28 rounded"/>
-          </div>
+          <div key={i} className="bg-void border border-navy/5 p-8 animate-pulse shadow-sm h-40" />
         ))}
       </div>
       <div className="bg-void border border-navy/5 p-20 text-center text-ash text-[12px] font-black uppercase tracking-[4px] italic opacity-40 animate-pulse">Initializing Financial Protocol...</div>
     </div>
   )
+
+  const payoutDaysRemaining = 15 - new Date().getDate()
+  const progressToPayout = Math.max(0, Math.min(100, ( (30 - payoutDaysRemaining) / 30 ) * 100))
+
   return (
-    <div className="space-y-6">
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="space-y-8">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-navy/8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pb-6 border-b border-navy/8">
         <div>
-          <div className="text-[12px] tracking-[3px] text-navy/30 uppercase font-black mb-1">INVESTOR DASHBOARD</div>
-          <h1 className="font-display text-3xl md:text-4xl text-navy uppercase tracking-tight">FINANCIAL OVERVIEW</h1>
+          <div className="text-xs md:text-sm font-semibold text-green tracking-wide mb-6 flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4" /> SECURED TERMINAL
+          </div>
+          <h1 className="font-sans text-3xl md:text-4xl text-navy font-bold tracking-tight mb-8 uppercase">WEALTH <span className="text-green">OVERVIEW.</span></h1>
         </div>
-        <div className="flex items-center gap-3 bg-white border border-navy/8 px-4 py-3 shadow-sm rounded-sm">
-          <span className="w-2 h-2 rounded-full bg-green animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-          <span className="text-[12px] text-navy font-black uppercase tracking-wider">Live · March 2026</span>
+        <div className="flex items-center gap-4 bg-white border border-navy/10 px-6 py-4 shadow-xl cut-md">
+          <div className="text-right">
+             <div className="text-[9px] text-navy/30 uppercase font-bold tracking-widest mb-1">Terminal Status</div>
+             <div className="text-sm text-navy font-bold tracking-tight">MARCH DEPLOYMENT CYCLE</div>
+          </div>
+          <div className="w-px h-10 bg-navy/10" />
+          <span className="w-2.5 h-2.5 rounded-full bg-green animate-pulse shadow-glow-green" />
         </div>
       </div>
 
       {/* Live Ticker */}
-      <div className="bg-navy py-3 px-4 overflow-hidden rounded-sm">
+      <div className="bg-navy py-4 px-6 overflow-hidden rounded-sm border border-white/5 relative shadow-glow-sm">
+         <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-green/50 to-transparent" />
          <div className="flex whitespace-nowrap animate-ticker scrollbar-none">
             {[1,2,3].map(i => (
-              <div key={i} className="flex items-center gap-8 mr-8 shrink-0">
-                 <span className="text-[11px] tracking-[3px] text-white/30 font-black uppercase">// LIVE FEED</span>
-                 <span className="text-[11px] tracking-[3px] text-green font-black uppercase flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green animate-pulse"/>FORTUNER KA-05 · EARNED ₹2,450
+              <div key={i} className="flex items-center gap-12 mr-12 shrink-0">
+                 <span className="text-[10px] tracking-widest text-white/30 font-semibold uppercase select-none">// LIVE SYSTEM AUDIT</span>
+                 <span className="text-[11px] tracking-tight text-green font-bold uppercase flex items-center gap-3">
+                    <Zap className="w-3 h-3 text-green animate-pulse" />FORTUNER KA-05 · EARNED ₹2,450 NET
                  </span>
-                 <span className="text-[11px] tracking-[3px] text-orange font-black uppercase">HUB ALPHA: 94% UTILIZATION</span>
+                 <span className="text-[11px] tracking-tight text-orange font-bold uppercase flex items-center gap-3">
+                    <TrendingUp className="w-3 h-3" />HUB ALPHA: 94% UTILIZATION
+                 </span>
               </div>
             ))}
          </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         <KpiCard label="Locked Future Revenue" val={`₹${(stats.lockedRevenue||0).toLocaleString('en-IN')}`} change={`↑ ${stats.upcomingBookings||0} upcoming bookings`} green />
-        <KpiCard label="Next Payout Date" val={stats.nextPayoutDate||'15 Mar 2026'} change={`Est. ₹${(stats.nextPayoutAmount||0).toLocaleString('en-IN')}`} orange />
-        <KpiCard label="March Net Yield" val={`₹${(stats.thisMonthNet||24800).toLocaleString('en-IN')}`} change="+16.4% vs last month" green />
+        <div className="bg-white border border-navy/8 p-6 hover:shadow-2xl transition-all duration-500 cursor-default group relative overflow-hidden rounded-sm flex flex-col justify-between h-full border-l-4 border-l-orange">
+           <div className="relative z-10">
+              <div className="text-[10px] font-bold text-navy/40 uppercase mb-4 tracking-tight">Next Payout Protocol</div>
+              <div className="font-sans text-3xl md:text-4xl font-bold text-orange mb-4 leading-none tracking-tight">{(stats.nextPayoutDate||'15 Mar 2026').split(' ')[0]} <span className="text-xl text-navy/30 tracking-tight">MAR</span></div>
+              <p className="text-[9px] md:text-[10px] text-navy/40 uppercase font-bold mb-6 tracking-widest leading-relaxed">Est. ₹{(stats.nextPayoutAmount||0).toLocaleString('en-IN')} // T+{Math.max(0, payoutDaysRemaining)} Days to Reset</p>
+           </div>
+           <div className="relative z-10">
+              <div className="flex justify-between items-center mb-3">
+                 <span className="text-[9px] text-orange font-black uppercase tracking-widest">Payout Cycle Alpha</span>
+                 <span className="text-[9px] text-navy/30 font-black">{Math.round(progressToPayout)}%</span>
+              </div>
+              <div className="h-2 bg-navy/5 rounded-full overflow-hidden">
+                 <div className="h-full bg-orange transition-all duration-1000 shadow-glow" style={{width:`${progressToPayout}%`}} />
+              </div>
+           </div>
+           <Calendar className="absolute top-8 right-8 w-12 h-12 text-orange/5 group-hover:text-orange/10 transition-colors" />
+        </div>
+        <KpiCard label="Consolidated March Net" val={`₹${(stats.thisMonthNet||24800).toLocaleString('en-IN')}`} change="+16.4% Efficiency Gain" green />
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Yield Chart */}
-        <div className="lg:col-span-3 bg-white border border-navy/8 p-6 md:p-8 shadow-sm relative overflow-hidden group rounded-sm">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <div className="text-[11px] tracking-[4px] text-navy/40 uppercase font-black mb-1">6-Month Performance</div>
-              <div className="text-lg font-display text-navy uppercase tracking-wide">YIELD TRAJECTORY</div>
-            </div>
-            <span className="text-[11px] text-green font-black bg-green/8 border border-green/15 px-4 py-2 rounded-sm">+34.8% ↑</span>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Yield Velocity Chart */}
+        <div className="lg:col-span-8 bg-white border border-navy/8 p-6 md:p-8 shadow-xl relative overflow-hidden group rounded-sm">
+          <div className="absolute top-0 right-0 p-8">
+              <TrendingUp className="w-8 h-8 text-green opacity-[0.05] group-hover:opacity-[0.15] transition-opacity" />
           </div>
-          <MiniChart />
+          <div className="flex justify-between items-start mb-10">
+            <div>
+              <div className="text-xs font-semibold text-orange tracking-wide mb-6 flex items-center gap-2">
+                <span className="w-8 h-px bg-orange" /> Dynamic Yield Index
+              </div>
+              <h2 className="font-sans text-2xl md:text-3xl text-navy font-bold tracking-tight mb-8 uppercase">YIELD VELOCITY <span className="text-navy/40">TRAJECTORY</span></h2>
+            </div>
+            <div className="bg-green/5 border border-green/20 px-4 py-2 flex items-center gap-3 group/chip transition-all hover:bg-green/10">
+              <span className="text-[11px] text-green font-black uppercase tracking-widest">+34.8% ↑</span>
+              <div className="w-px h-4 bg-green/20" />
+              <div className="text-[9px] text-navy/40 font-black uppercase tracking-[2px]">L-6M</div>
+            </div>
+          </div>
+          <YieldVelocityChart />
         </div>
         
-        {/* Allocation Breakdown */}
-        <div className="lg:col-span-2 bg-white border border-navy/8 p-6 md:p-8 shadow-sm rounded-sm">
-          <div className="text-[11px] tracking-[4px] text-navy/40 uppercase font-black mb-6">Revenue Breakdown</div>
-          <div className="font-display text-xl text-navy uppercase mb-8">ALLOCATION</div>
-          <div className="space-y-6">
+        {/* Revenue Allocation Matrix */}
+        <div className="lg:col-span-4 bg-white border border-navy/8 p-6 md:p-8 shadow-xl rounded-sm relative overflow-hidden flex flex-col">
+          <div className="absolute -top-10 -right-10 w-40 h-40 bg-navy/5 blur-3xl rounded-full" />
+          <div className="text-[10px] tracking-widest text-navy/30 uppercase font-bold mb-8">Allocation Architecture</div>
+          <div className="font-sans text-xl font-bold text-navy uppercase mb-10 tracking-tight leading-none">DISTRIBUTION MATRIX</div>
+          <div className="space-y-8 flex-1">
             {[
-              {label:'Gross Revenue',  val:'₹35,429', color:'text-navy',    bar:100, bg:'bg-navy/15'},
-              {label:'Your 70% Yield', val:'₹24,800', color:'text-green',   bar:70,  bg:'bg-green'},
-              {label:'Platform (25%)', val:'₹8,857',  color:'text-navy/30', bar:25,  bg:'bg-navy/25'},
-              {label:'Mechanix  (5%)', val:'₹1,771',  color:'text-orange',  bar:5,   bg:'bg-orange'},
-            ].map(r=>(
-              <div key={r.label}>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-[12px] text-navy/50 font-bold">{r.label}</span>
-                  <span className={`text-[13px] font-black ${r.color}`}>{r.val}</span>
+              {label:'Gross Asset Revenue',  val:'₹35,429', color:'text-navy',    bar:100, bg:'bg-navy/8'},
+              {label:'Net Passive Yield (70%)', val:'₹24,800', color:'text-green',   bar:70,  bg:'bg-green'},
+              {label:'Platform Protocol (25%)', val:'₹8,857',  color:'text-navy/30', bar:25,  bg:'bg-navy/20'},
+              {label:'Mechanix Reserve (5%)', val:'₹1,771',  color:'text-orange',  bar:5,   bg:'bg-orange'},
+            ].map((r, i)=>(
+              <motion.div initial={{ opacity:0, x:20 }} animate={{ opacity:1, x:0 }} transition={{ delay: 0.2 + i*0.1 }} key={r.label}>
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-xs text-ash font-bold uppercase tracking-wider">{r.label}</span>
+                  <span className={`text-sm font-mono font-bold ${r.color}`}>{r.val}</span>
                 </div>
-                <div className="h-1.5 bg-navy/5 rounded-full overflow-hidden">
-                  <div className={`h-full ${r.bg} rounded-full transition-all duration-1000`} style={{width:`${r.bar}%`}}/>
+                <div className="h-1 bg-navy/5 rounded-full overflow-hidden">
+                  <div className={`h-full ${r.bg} rounded-full transition-all duration-1000 shadow-glow-sm`} style={{width:`${r.bar}%`}}/>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
-        {/* Asset Health */}
-        <div className="lg:col-span-3 bg-white border border-navy/8 p-6 md:p-8 shadow-sm rounded-sm">
-          <div className="text-[11px] tracking-[4px] text-navy/40 uppercase font-black mb-1">Asset Status</div>
-          <div className="font-display text-xl text-navy uppercase mb-6">HEALTH PROTOCOL</div>
-          <div className="flex justify-between items-center mb-3">
-            <div>
-              <div className="text-[13px] text-navy font-black uppercase tracking-tight">MAHINDRA XUV 300</div>
-              <div className="text-[11px] text-navy/30 font-mono mt-0.5">KA04ND5967</div>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-2xl font-black text-green">95.4%</span>
-              <span className="w-2.5 h-2.5 rounded-full bg-green animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-            </div>
-          </div>
-          <div className="h-2.5 bg-navy/5 rounded-full overflow-hidden mb-5">
-            <div className="h-full bg-green rounded-full shadow-[0_0_12px_rgba(34,197,94,0.4)]" style={{width:'95.4%'}}/>
-          </div>
-          <div className="bg-green/5 border border-green/15 px-4 py-3 rounded-sm">
-            <span className="text-[11px] text-navy/50 font-medium">Last Mechanix Pro audit: </span>
-            <span className="text-[11px] text-navy font-black">12 Mar 2026 </span>
-            <span className="text-[11px] text-green font-black">· SECURE ✓</span>
-          </div>
-        </div>
-
-        {/* Expand Portfolio CTA */}
-        <div className="lg:col-span-3 bg-navy border border-navy p-6 md:p-8 shadow-xl rounded-sm relative overflow-hidden group hover:shadow-2xl transition-all">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-orange/10 blur-[60px] rounded-full pointer-events-none" />
-          <div className="relative z-10">
-            <div className="flex justify-between items-start mb-6">
-              <div className="text-[11px] tracking-[4px] text-orange uppercase font-black mb-1">Portfolio Expansion</div>
-              <div className="w-10 h-10 bg-orange flex items-center justify-center text-white text-xl font-black rounded-sm">+</div>
-            </div>
-            <div className="font-display text-3xl text-white uppercase leading-tight mb-4">DEPLOY A<br/><span className="text-orange">SECOND ASSET.</span></div>
-            <p className="text-[13px] text-white/40 font-medium mb-8 leading-relaxed">Demand for 7-seater SUVs is <span className="text-orange font-black">140% above avg</span> in Bengaluru South. Est. ROI: ₹4.8L/yr.</p>
-            <button onClick={()=>setTab('addasset')} className="w-full bg-orange text-white py-4 text-[12px] tracking-[4px] font-black uppercase hover:bg-orange/90 transition-all shadow-lg rounded-sm">
-               EXPAND PORTFOLIO →
-            </button>
+          <div className="mt-10 p-5 bg-navy/5 border-l-4 border-l-navy cut-sm">
+             <div className="text-[9px] text-navy/50 font-bold leading-relaxed uppercase tracking-widest italic">
+                Yield distribution is locked per MAMA v3.2 Protocol using real-time trip-by-trip accounting.
+             </div>
           </div>
         </div>
       </div>
-    </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-4">
+        {/* Live Asset Health (Zerodha Style Score) */}
+        <div className="lg:col-span-12 bg-white border border-navy/8 p-8 md:p-10 shadow-xl rounded-sm relative overflow-hidden group">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+             <div className="flex-1">
+                <div className="text-xs font-semibold text-orange tracking-wide mb-6 flex items-center gap-2">
+                  <span className="w-8 h-px bg-orange" /> Asset Health Metric
+                </div>
+                <h3 className="font-sans text-2xl md:text-3xl text-navy font-bold tracking-tight mb-8 uppercase">MAHINDRA XUV 300 <span className="text-navy/20 font-mono tracking-widest text-lg ml-4">KA04ND5967</span></h3>
+                
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                   {[
+                      {l:'ECU Protocol', v:'SECURE ✓', c:'text-green'},
+                      {l:'Tyre Index', v:'88% NEW', c:'text-navy'},
+                      {l:'Fluid Logic', v:'OPTIMAL', c:'text-green'},
+                      {l:'Brake Status', v:'9.2mm DEPTH', c:'text-orange'},
+                   ].map(h=>(
+                      <div key={h.l} className="bg-navy/[0.02] p-5 border border-navy/5 cut-sm">
+                         <div className="text-[9px] text-navy/30 uppercase font-black tracking-widest mb-2">{h.l}</div>
+                         <div className={`text-[12px] font-black uppercase tracking-tight ${h.c}`}>{h.v}</div>
+                      </div>
+                   ))}
+                </div>
+             </div>
+             
+             <div className="w-full md:w-64 text-center bg-navy/[0.03] border border-navy/5 p-8 flex flex-col items-center justify-center cut-lg shadow-inner group-hover:bg-navy/[0.05] transition-colors">
+                <div className="text-[10px] tracking-widest text-navy/40 uppercase font-bold mb-6">Aggregate Stability Index</div>
+                <div className="relative w-32 h-32 mb-6">
+                   <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                      <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#E2E8F0" strokeWidth="2.5" />
+                      <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeDasharray="95.4, 100" strokeLinecap="round" className="shadow-glow" />
+                   </svg>
+                   <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-3xl font-display text-navy leading-none">95.4</span>
+                      <span className="text-[9px] font-black text-green mt-1">%</span>
+                   </div>
+                </div>
+                <div className="text-[10px] text-green font-black uppercase tracking-[3px] animate-pulse">OPTIMAL PERFORMANCE</div>
+             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-4">
+        {/* Expansion CTA */}
+        <div className="lg:col-span-12 bg-navy border border-navy p-10 md:p-14 shadow-2xl rounded-sm relative overflow-hidden group hover:shadow-[0_40px_100px_-20px_rgba(12,29,54,0.5)] transition-all duration-700">
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-orange/5 blur-[120px] rounded-full pointer-events-none transition-transform duration-1000 group-hover:scale-125" />
+          <div className="absolute -left-20 -bottom-20 w-[400px] h-[400px] bg-green/5 blur-[100px] rounded-full pointer-events-none" />
+          
+          <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-12">
+             <div className="max-w-xl text-center lg:text-left">
+                <div className="inline-flex items-center gap-4 bg-orange/10 border border-orange/20 px-4 py-2 mb-8 cut-sm">
+                   <Zap className="w-4 h-4 text-orange" />
+                   <span className="text-[10px] tracking-[6px] text-orange uppercase font-black">PHASE IV DEPLOYMENT OPEN</span>
+                </div>
+                <h3 className="font-sans text-4xl md:text-5xl text-white font-bold tracking-tight mb-8 uppercase">EXPAND YOUR <span className="text-orange">CAPITAL NODE.</span></h3>
+                <p className="text-[16px] text-white/40 font-medium mb-10 leading-relaxed uppercase tracking-wider">Demand for 7-seater lux-SUVs is <span className="text-orange font-black">140% above historic baseline</span> in Bengaluru South sector. Initialise a second asset to multiply yield efficiency.</p>
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-8">
+                   <div className="flex flex-col">
+                      <span className="text-[9px] text-white/20 font-black uppercase tracking-widest mb-2">Estimated Yield</span>
+                      <span className="text-2xl font-display text-white">₹4.82L <span className="text-[14px]/none text-green font-black ml-1">/ YR</span></span>
+                   </div>
+                   <div className="w-px h-10 bg-white/10 hidden md:block" />
+                   <div className="flex flex-col">
+                      <span className="text-[9px] text-white/20 font-black uppercase tracking-widest mb-2">Waitlist Delta</span>
+                      <span className="text-2xl font-display text-white">48 HRS</span>
+                   </div>
+                </div>
+             </div>
+             
+             <div className="w-full lg:w-96">
+                <button onClick={()=>{setTab('addasset'); window.scrollTo({top:0, behavior:'smooth'})}} 
+                   className="w-full bg-orange text-white py-8 text-2xl tracking-widest uppercase font-bold hover:bg-white hover:text-navy transition-all shadow-[0_20px_50px_rgba(248,147,31,0.3)] group/btn relative overflow-hidden cut-lg">
+                   <span className="relative z-10">INITIALISE →</span>
+                   <div className="absolute inset-0 bg-white translate-x-[-100%] group-hover/btn:translate-x-0 transition-transform duration-500 origin-left" />
+                </button>
+                <p className="text-center text-[10px] text-white/20 uppercase font-bold tracking-[4px] mt-8">Institutional Protocol v4.0 Active</p>
+             </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
   )
 }
+
 
 
 function LedgerTab({trips}:{trips:Trip[]}) {
@@ -210,10 +309,10 @@ function LedgerTab({trips}:{trips:Trip[]}) {
     <div>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
         <div>
-           <div className="text-[10px] tracking-[4px] text-green uppercase font-black mb-2 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-green shadow-glow animate-pulse" /> Live Settlement Protocol
+           <div className="text-xs font-semibold text-green tracking-wide mb-6 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green shadow-glow animate-pulse" /> LIVE SETTLEMENT PROTOCOL
            </div>
-           <h2 className="font-display text-4xl text-navy uppercase font-black tracking-tighter">FINANCIAL<br/><span className="text-green">LEDGER.</span></h2>
+           <h2 className="font-sans text-3xl md:text-4xl text-navy font-bold tracking-tight mb-8 uppercase">FINANCIAL <span className="text-green">LEDGER.</span></h2>
         </div>
         <button onClick={doExport} className="w-full md:w-auto bg-navy text-white px-10 py-5 text-[11px] tracking-[5px] uppercase font-black hover:bg-orange transition-all shadow-xl cut-md flex items-center gap-4">
           One-Click CA Export ↓
@@ -254,12 +353,12 @@ function LedgerTab({trips}:{trips:Trip[]}) {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
          <div className="bg-white border border-navy/5 p-8 cut-md shadow-md">
-            <div className="text-[9px] tracking-[3px] text-ash uppercase mb-4 font-black">Month-to-Date Gross</div>
-            <div className="text-4xl font-display text-navy font-black tracking-tight">₹{trips.reduce((acc,curr)=>acc+curr.grossRent, 0).toLocaleString('en-IN')}</div>
+            <div className="text-[9px] tracking-widest text-ash uppercase mb-4 font-bold">Month-to-Date Gross</div>
+            <div className="text-4xl font-sans text-navy font-bold tracking-tight">₹{trips.reduce((acc,curr)=>acc+curr.grossRent, 0).toLocaleString('en-IN')}</div>
          </div>
          <div className="bg-white border border-navy/5 p-8 cut-md shadow-md border-b-4 border-b-green">
             <div className="text-[9px] tracking-[3px] text-green uppercase mb-4 font-black">Settled Net Profit</div>
-            <div className="text-4xl font-display text-green font-black tracking-tight shadow-glow">₹{trips.reduce((acc,curr)=>acc+curr.netYield, 0).toLocaleString('en-IN')}</div>
+            <div className="text-4xl font-sans text-green font-bold tracking-tight shadow-glow">₹{trips.reduce((acc,curr)=>acc+curr.netYield, 0).toLocaleString('en-IN')}</div>
          </div>
          <div className="bg-white border border-navy/5 p-8 cut-md shadow-md">
             <div className="text-[9px] tracking-[3px] text-ash uppercase mb-4 font-black">Platform Contribution</div>
@@ -295,10 +394,10 @@ function TicketsTab() {
     <div className="max-w-5xl mx-auto">
       <div className="flex justify-between items-center mb-10">
          <div>
-            <div className="text-[10px] tracking-[4px] text-orange uppercase font-black mb-2 flex items-center gap-2">
-               <span className="w-1.5 h-1.5 rounded-full bg-orange shadow-glow animate-pulse" /> Investor Relations Center
-            </div>
-            <h2 className="font-display text-4xl text-navy uppercase font-black tracking-tighter">SUPPORT<br/><span className="text-orange">INBOX.</span></h2>
+           <div className="text-xs font-semibold text-orange tracking-wide mb-6 flex items-center gap-2">
+              <span className="w-8 h-px bg-orange" /> Investor Relations Center
+           </div>
+           <h2 className="font-sans text-3xl md:text-4xl text-navy font-bold tracking-tight mb-8 uppercase">SUPPORT <span className="text-orange">INBOX.</span></h2>
          </div>
          {!showForm && (
            <button onClick={()=>setShowForm(true)} className="bg-navy text-white px-10 py-5 text-[11px] tracking-[5px] uppercase font-black hover:bg-orange transition-all shadow-xl cut-md">
@@ -364,7 +463,7 @@ function FleetTab() {
         <div key={v.reg} className="glass-card border border-navy/10 p-8 md:p-10 mb-8 shadow-premium hover:shadow-glow-green transition-all duration-700 cut-lg">
           <div className="flex flex-col sm:flex-row justify-between items-start gap-6 mb-10">
             <div>
-              <div className="font-display text-4xl md:text-5xl text-navy tracking-tight mb-3">{v.make} {v.model}</div>
+              <div className="font-sans text-3xl md:text-4xl font-bold text-navy tracking-tight mb-3">{v.make} {v.model}</div>
               <div className="flex items-center gap-4">
                 <div className="text-[12px] font-mono text-ash font-black uppercase tracking-widest">{v.registration_number}</div>
                 <span className="w-1.5 h-1.5 rounded-full bg-green glow-green animate-pulse" />
@@ -551,8 +650,8 @@ function CalendarTab({stats}:{stats:InvestorStats|null}) {
 function TaxTab() {
   return (
     <div>
-      <div className="text-[9px] md:text-[10px] tracking-[3px] md:tracking-[4px] text-navy uppercase font-black mb-8 flex items-center gap-2 md:gap-3">
-        <span className="w-6 md:w-8 h-px bg-green" /> Financial Tax & CA Portal
+      <div className="text-xs font-semibold text-green tracking-wide mb-6 flex items-center gap-2">
+        <span className="w-8 h-px bg-green" /> Financial Tax & CA Portal
       </div>
       <div className="bg-white border border-navy/10 p-6 md:p-10 mb-8 shadow-md">
         <p className="text-[12px] md:text-[13px] text-ash font-medium leading-relaxed mb-10 max-w-2xl">
@@ -579,7 +678,7 @@ function TaxTab() {
             </div>
             <button onClick={()=>{investorAPI.exportLedger('FY 2025-26');toast.success('Compiling FY 2025-26...')}}
               className="w-full border-2 border-navy/10 bg-navy/[.01] p-6 md:p-10 text-center hover:border-green hover:bg-green/5 transition-all group">
-              <div className="font-display text-4xl md:text-5xl text-navy mb-4 group-hover:text-green group-hover:scale-105 transition-all font-black">FY 25-26</div>
+              <div className="font-sans text-4xl md:text-5xl text-navy mb-4 group-hover:text-green group-hover:scale-105 transition-all font-bold">FY 25-26</div>
               <div className="text-[9px] md:text-[10px] text-ash font-black uppercase tracking-[2px] md:tracking-[3px] mb-4">Financial Year Console</div>
               <div className="inline-block bg-navy text-void text-[8px] md:text-[9px] tracking-[2px] md:tracking-[3px] px-6 md:px-8 py-2.5 md:py-3 font-black uppercase group-hover:bg-green">Generate Full Year Export ↓</div>
             </button>
@@ -779,24 +878,26 @@ function AddAssetTab() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-navy/5 border border-navy/5">
               {[
-                {label:'Gross Forecast', val:`₹${gross.toLocaleString('en-IN')}`, cls:'text-navy', g:false},
-                {label:'Platform Fee (30%)', val:`-₹${fee.toLocaleString('en-IN')}`, cls:'text-ash', g:false},
-                {label:'Mechanix Expense', val:`-₹${mech.toLocaleString('en-IN')}`, cls:'text-ash', g:false},
-                {label:'Net Passive Yield', val:`₹${net.toLocaleString('en-IN')}`, cls:'text-green', g:true},
+                {label:'Gross Forecast', val:`₹${gross.toLocaleString('en-IN')}`, cls:'text-navy', g:false, icon:'📈'},
+                {label:'Platform Fee (30%)', val:`-₹${fee.toLocaleString('en-IN')}`, cls:'text-ash', g:false, icon:'⊘'},
+                {label:'Mechanix Expense', val:`-₹${mech.toLocaleString('en-IN')}`, cls:'text-ash', g:false, icon:'🔧'},
+                {label:'Net Passive Yield', val:`₹${net.toLocaleString('en-IN')}`, cls:'text-green', g:true, icon:'💎'},
               ].map(r=>(
-                <div key={r.label} className="bg-void p-5 md:p-6 text-center sm:text-left">
+                <div key={r.label} className="bg-void p-5 md:p-6 text-center sm:text-left group/stat relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-4 opacity-5 group-hover/stat:opacity-20 transition-opacity text-2xl">{r.icon}</div>
                   <div className="text-[8px] md:text-[9px] text-ash mb-2 md:mb-3 font-black uppercase tracking-[1.5px] md:tracking-[2px]">{r.label}</div>
-                  <div className={`font-display text-2xl md:text-2xl ${r.cls}`}>{r.val}</div>
+                  <div className={`font-display text-2xl md:text-2xl ${r.cls} group-hover/stat:scale-105 transition-transform origin-left`}>{r.val}</div>
                 </div>
               ))}
-              <div className="col-span-1 sm:col-span-2 bg-void p-6 md:p-8 border-t border-navy/5 flex flex-col sm:flex-row items-center justify-between gap-6">
-                <div className="text-center sm:text-left">
-                  <div className="text-[9px] md:text-[10px] text-ash font-black uppercase tracking-[2px] md:tracking-[3px] mb-2">Annualized Net Consolidation</div>
-                  <div className="font-display text-4xl md:text-5xl text-navy tracking-tight">₹{annual.toLocaleString('en-IN')}</div>
+              <div className="col-span-1 sm:col-span-2 bg-void p-6 md:p-8 border-t border-navy/5 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden group/annual">
+                <div className="absolute inset-0 bg-green/[0.01] opacity-0 group-hover/annual:opacity-100 transition-opacity" />
+                <div className="text-center sm:text-left relative z-10">
+                  <div className="text-[9px] md:text-[10px] text-ash font-black uppercase tracking-[2px] md:tracking-[3px] mb-2 font-mono">// ANNUALIZED NET CONSOLIDATION</div>
+                  <div className="font-display text-4xl md:text-5xl text-navy tracking-tight group-hover/annual:translate-x-2 transition-transform">₹{annual.toLocaleString('en-IN')}</div>
                 </div>
-                <div className="text-center sm:text-right">
-                  <div className="font-display text-5xl md:text-6xl text-green glow-green">{roi}%</div>
-                  <div className="text-[9px] md:text-[10px] text-ash font-black uppercase tracking-widest mt-2">{roi>25?'EXCEPTIONAL YIELD':'Estimated Yield Efficiency'}</div>
+                <div className="text-center sm:text-right relative z-10">
+                  <div className="font-display text-5xl md:text-6xl text-green drop-shadow-[0_0_15px_rgba(34,197,94,0.3)] animate-pulse">{roi}%</div>
+                  <div className="text-[9px] md:text-[10px] text-green font-black uppercase tracking-widest mt-2 px-4 py-1.5 border border-green/20 bg-green/5 shadow-glow-sm">{roi>25?'INSTITUTIONAL GRADE':'ALPHA YIELD LEVEL'}</div>
                 </div>
               </div>
             </div>
@@ -855,31 +956,31 @@ export default function DashboardPage() {
             <DynamicLogo className="h-8 w-auto text-navy" />
           </a>
           <div className="h-6 w-px bg-navy/10 hidden sm:block" />
-          <div className="text-[10px] tracking-[3px] text-green border border-green/25 px-3 py-1 font-black uppercase hidden sm:block bg-green/5 rounded-sm">INVESTOR PORTAL</div>
+          <div className="text-[10px] tracking-widest text-green border border-green/25 px-3 py-1 font-bold uppercase hidden sm:block bg-green/5 rounded-sm">INVESTOR PORTAL</div>
         </div>
         <div className="flex items-center gap-3 md:gap-4">
           <div className="hidden md:flex items-center gap-2 bg-green/5 border border-green/15 px-3 py-1.5 rounded-sm">
             <span className="w-1.5 h-1.5 bg-green rounded-full animate-pulse" />
-            <span className="text-[11px] text-green font-black uppercase tracking-widest">SECURED</span>
+            <span className="text-[11px] text-green font-bold uppercase tracking-widest">SECURED</span>
           </div>
-          <span className="text-[13px] text-navy font-black truncate max-w-[120px] md:max-w-none">{user?.name||user?.phone||'Investor'}</span>
+          <span className="text-[13px] text-navy font-bold truncate max-w-[120px] md:max-w-none">{user?.name||user?.phone||'Investor'}</span>
           <a href="/" className="text-[11px] text-navy/40 hover:text-navy border border-navy/10 px-3 py-2 uppercase transition-all font-bold hidden sm:block rounded-sm">← Home</a>
           <button onClick={logout} className="text-[11px] tracking-[2px] text-white bg-navy hover:bg-orange transition-colors uppercase border-0 px-4 py-2 font-black rounded-sm">Logout</button>
         </div>
       </div>
 
-      <div className="flex flex-1 pt-[68px] flex-col lg:flex-row">
+      <div className="flex flex-1 pt-[68px] flex-col lg:flex-row h-[calc(100vh-68px)] overflow-hidden">
         {/* Sidebar */}
-        <div className="w-full lg:w-[260px] bg-white border-b lg:border-b-0 lg:border-r border-navy/8 lg:fixed lg:top-[68px] lg:bottom-0 lg:left-0 overflow-x-auto lg:overflow-y-auto scrollbar-none z-40 shadow-md">
+        <div className="w-full lg:w-[240px] bg-white border-b lg:border-b-0 lg:border-r border-navy/8 lg:fixed lg:top-[68px] lg:bottom-0 lg:left-0 overflow-x-auto lg:overflow-y-auto scrollbar-none z-40 shadow-md">
           {/* User Profile */}
           <div className="hidden lg:block p-6 border-b border-navy/5 bg-navy relative overflow-hidden">
             <div className="absolute inset-0 pointer-events-none opacity-5" style={{backgroundImage:`radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,backgroundSize:'20px 20px'}} />
             <div className="relative z-10">
               <div className="w-12 h-12 bg-white/10 border border-white/20 rounded-sm flex items-center justify-center text-2xl mb-4">👤</div>
-              <div className="text-[15px] text-white font-black truncate uppercase tracking-tight leading-tight mb-1">{user?.name||user?.phone||'Investor'}</div>
+              <div className="text-[15px] text-white font-bold truncate uppercase tracking-tight leading-tight mb-1">{user?.name||user?.phone||'Investor'}</div>
               <div className="flex items-center gap-2">
                  <div className={`w-2 h-2 rounded-full ${user?.kycVerified?'bg-green animate-pulse':'bg-orange animate-pulse'}`} />
-                 <span className={`text-[11px] font-black uppercase tracking-wider ${user?.kycVerified?'text-green':'text-orange'}`}>
+                 <span className={`text-[11px] font-bold uppercase tracking-tight ${user?.kycVerified?'text-green':'text-orange'}`}>
                    {user?.kycVerified?'KYC Verified':'KYC Pending'}
                  </span>
               </div>
@@ -888,12 +989,12 @@ export default function DashboardPage() {
           
           <div className="flex lg:flex-col p-2 lg:py-4 min-w-max lg:min-w-0">
             <div className="hidden lg:block px-5 pt-4 pb-2">
-               <div className="text-[10px] tracking-[4px] text-navy/25 uppercase font-black">NAVIGATION</div>
+               <div className="text-[10px] tracking-widest text-navy/25 uppercase font-bold">NAVIGATION</div>
             </div>
             {NAV.map((n) => (
               <div key={n.id} className="flex">
                 <button onClick={()=>setTab(n.id)}
-                  className={`flex items-center gap-3 px-5 py-3.5 lg:py-4 text-[12px] tracking-[1px] uppercase text-left transition-all border-b-2 lg:border-b-0 lg:border-l-4 font-black whitespace-nowrap w-full ${
+                  className={`flex items-center gap-3 px-5 py-3.5 lg:py-4 text-[12px] tracking-tight uppercase text-left transition-all border-b-2 lg:border-b-0 lg:border-l-4 font-bold whitespace-nowrap w-full ${
                     tab===n.id
                       ?'text-navy border-orange bg-orange/5 shadow-inner'
                       :'text-navy/40 border-transparent hover:text-navy hover:bg-navy/5'
@@ -907,7 +1008,7 @@ export default function DashboardPage() {
             
             {/* Market Watch */}
             <div className="hidden lg:block mt-6 px-5 pt-6 border-t border-navy/5">
-                <div className="text-[10px] tracking-[4px] text-navy/25 uppercase font-black mb-4">MARKET DEMAND</div>
+                <div className="text-[10px] tracking-widest text-navy/25 uppercase font-bold mb-4">MARKET DEMAND</div>
                 <div className="space-y-4">
                     {MARKET_DEMAND.map((m, i) => (
                       <div key={i} className="flex justify-between items-center">
@@ -921,7 +1022,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 lg:ml-[260px] p-4 md:p-8 transition-all">
+        <div className="flex-1 w-full lg:pl-[240px] p-4 md:p-8 transition-all overflow-y-auto custom-scrollbar">
           <div className="max-w-7xl mx-auto">
             {tab==='overview'  && <OverviewTab stats={stats} setTab={setTab}/>}
             {tab==='ledger'    && <LedgerTab trips={trips}/>}

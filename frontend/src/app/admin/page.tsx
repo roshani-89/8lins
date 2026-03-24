@@ -216,6 +216,16 @@ function MechanixTab() {
   const [costs, setCosts]     = useState<Record<string,string>>({})
   const [busy, setBusy]       = useState(false)
   const [offlineMode, setOfflineMode] = useState(false)
+  const [audits, setAudits]   = useState<any[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
+
+  const loadAudits = async () => {
+    setLoadingHistory(true)
+    try { const r = await mechanixAPI.getAudits(); setAudits(r.data.filter((a:any)=>a.status==='completed')) }
+    catch { /* silent */ }
+    finally { setLoadingHistory(false) }
+  }
+  useEffect(() => { loadAudits() }, [])
 
   useEffect(() => {
     adminAPI.getFleet().then(r => setVehicles(r.data)).catch(() => {
@@ -297,7 +307,7 @@ function MechanixTab() {
         await mechanixAPI.completeAudit(audit.id, { total_repair_cost: repairTotal })
       }
       toast.success(failCount === 0 ? '✓ ALL PASS: Vehicle Cleared for Dispatch' : `✓ Audit Complete: ₹${repairTotal.toLocaleString()} Deduced`)
-      setAudit(null); setResults({}); setCosts({}); setEvidence({}); setSelected('')
+      setAudit(null); setResults({}); setCosts({}); setEvidence({}); setSelected(''); loadAudits()
     } catch { toast.error('Finalization Protocol Failed') }
     finally { setBusy(false) }
   }
@@ -306,47 +316,97 @@ function MechanixTab() {
   const categories = Array.from(new Set(AUDIT_ITEMS.map(i => i.cat)))
 
   if (!audit) return (
-    <div className="max-w-5xl">
-      <div className="text-[10px] tracking-[4px] text-navy uppercase font-black mb-10 flex items-center gap-3">
-        <span className="w-10 h-px bg-green" /> Mechanix Pro — Physical Audit Gateway
+    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="text-[11px] tracking-[6px] text-navy uppercase font-black flex items-center gap-4">
+          <span className="w-12 h-px bg-green" /> Mechanix Pro — Fleet Health Command
+        </div>
+        <div className="flex bg-white border border-navy/10 p-1 cut-sm">
+           <div className="px-6 py-2 text-[10px] tracking-[2px] text-ash font-black uppercase opacity-40">Node: Mangammanapalya Hub</div>
+        </div>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-        <div className="bg-white border border-navy/10 shadow-2xl p-6 md:p-10 relative overflow-hidden h-fit">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-navy/5 -rotate-12 translate-x-12 -translate-y-12" />
-          <div className="text-5xl md:text-7xl mb-10">🛡️</div>
-          <h2 className="text-[18px] text-navy font-bold mb-4 uppercase tracking-tighter leading-none">Security Dispatch Protocol</h2>
-          <p className="text-[11px] text-ash leading-relaxed mb-10 font-bold uppercase tracking-[1px]">Select asset to initialize the 22-point mandatory digital health inspection.</p>
-          
-          <div className="space-y-6">
-            <div>
-              <label className="text-[9px] tracking-[4px] text-ash uppercase block mb-3 font-black">Strategic Asset Identification</label>
-              <select value={selected} onChange={e => {
-                setSelected(e.target.value)
-                setSelectedName(e.target.options[e.target.selectedIndex].text)
-              }} className="w-full bg-void border border-navy/10 px-5 py-4 text-[13px] text-navy font-black outline-none focus:border-green transition-all appearance-none cursor-pointer">
-                <option value="">-- SELECT ACTIVE CHASSIS --</option>
-                {vehicles.map(v => <option key={v.id} value={v.id}>{v.make} {v.model} · {v.registration_number}</option>)}
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <div className="lg:col-span-4 space-y-10">
+          <div className="bg-white border border-navy/10 shadow-2xl p-8 relative overflow-hidden h-fit group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-navy/5 -rotate-12 translate-x-12 -translate-y-12" />
+            <h2 className="text-[11px] tracking-[5px] text-navy font-black mb-8 uppercase italic grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all">New Audit Protocol</h2>
+            
+            <div className="space-y-6 text-body">
+              <select 
+                value={selected} 
+                onChange={e => {
+                  setSelected(e.target.value);
+                  const v = vehicles.find(x=>x.id===e.target.value);
+                  if(v) setSelectedName(`${v.make} ${v.model}`);
+                }}
+                className="w-full bg-void border border-navy/10 px-6 py-5 text-[11px] text-navy font-black uppercase tracking-[2px] outline-none focus:border-green transition-all appearance-none cursor-pointer">
+                <option value="">-- SELECT FLEET ASSET --</option>
+                {vehicles.map(v=><option key={v.id} value={v.id}>{v.make} {v.model} · {v.registration_number}</option>)}
               </select>
+              <button 
+                onClick={() => startNewAudit(selected, selectedName)} disabled={!selected || busy}
+                className="w-full bg-navy text-void text-[11px] tracking-[4px] uppercase font-black py-6 hover:bg-green transition-all shadow-xl cut-sm disabled:opacity-40">
+                {busy ? 'SYNCHRONIZING...' : 'INITIALIZE ASSET SCAN →'}
+              </button>
             </div>
-            <button onClick={() => startNewAudit(selected, selectedName)} disabled={!selected || busy}
-              className="w-full bg-navy text-void text-[11px] tracking-[5px] py-6 font-black uppercase hover:bg-green transition-all shadow-xl cut-sm">
-              {busy ? 'INITIALIZING LEDGER...' : 'COMMENCE DIGITAL AUDIT →'}
-            </button>
+          </div>
+
+          <div className="bg-navy p-10 shadow-2xl cut-lg relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-4 grayscale opacity-20 text-6xl">⚙️</div>
+             <div className="text-[9px] tracking-[4px] text-green uppercase font-black mb-4">Diagnostic Insights</div>
+             <div className="space-y-4">
+                <div className="flex justify-between items-end border-b border-white/5 pb-2">
+                   <span className="text-[10px] text-ash/60 font-black uppercase tracking-widest">Active Audits</span>
+                   <span className="text-2xl text-white font-display">02</span>
+                </div>
+                <div className="flex justify-between items-end border-b border-white/5 pb-2">
+                   <span className="text-[10px] text-ash/60 font-black uppercase tracking-widest">Health Pass (24H)</span>
+                   <span className="text-2xl text-white font-display">08</span>
+                </div>
+                <div className="flex justify-between items-end">
+                   <span className="text-[10px] text-ash/60 font-black uppercase tracking-widest">Repair Queue</span>
+                   <span className="text-2xl text-red font-display">03</span>
+                </div>
+             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4">
-          <div className="text-[9px] tracking-[4px] text-ash uppercase mb-2 font-black italic md:col-span-2 lg:col-span-1">Audit Checkpoint Allocation</div>
-          {categories.map(cat => (
-            <div key={cat} className="flex items-center justify-between p-4 md:p-5 border border-navy/5 bg-void/50 group hover:border-navy/20 transition-all">
-              <span className="text-[10px] font-black uppercase tracking-[2px] text-navy">{cat}</span>
-              <span className="text-[10px] text-ash font-bold">{AUDIT_ITEMS.filter(i => i.cat === cat).length} PARAMETERS</span>
-            </div>
-          ))}
-          <div className="pt-6 border-t border-navy/10 mt-6 flex justify-between items-center px-2 md:col-span-2 lg:col-span-1">
-            <span className="text-[10px] text-ash font-black uppercase tracking-[3px]">Total Compliance Checks</span>
-            <span className="text-xl md:text-2xl font-display text-navy">22 / 22</span>
-          </div>
+        <div className="lg:col-span-8">
+           <div className="text-[9px] tracking-[5px] text-ash uppercase font-black mb-6 flex items-center gap-3">
+             <span className="w-8 h-px bg-ash/30" /> RECENTLY COMPLETED PROTOCOLS
+           </div>
+           <div className="bg-white border border-navy/10 shadow-xl overflow-hidden min-h-[400px]">
+              <div className="hidden md:grid grid-cols-5 px-10 py-5 bg-void border-b border-navy/10 text-[9px] tracking-[4px] text-ash uppercase font-black">
+                <span>Asset Node</span><span>Diagnosis</span><span>Cost Settlement</span><span>Timestamp</span><span>Docs</span>
+              </div>
+              <div className="max-h-[600px] overflow-y-auto">
+                {!loadingHistory && audits.map((a,i)=>(
+                  <div key={i} className="flex flex-col md:grid md:grid-cols-5 px-10 py-6 border-b border-navy/5 items-start md:items-center hover:bg-void/40 transition-all font-bold gap-4 md:gap-0 font-body">
+                    <span className="text-[11px] text-navy uppercase truncate pr-4">{a.vehicle_reg}</span>
+                    <span className={`text-[8px] tracking-[2px] uppercase font-black px-3 py-1 border ${a.fail_count===0?'text-green border-green/30 bg-green/5':'text-red border-red/30 bg-red/5'}`}>
+                      {a.fail_count === 0 ? 'ALL PASS' : `${a.fail_count} FAILED`}
+                    </span>
+                    <span className={`text-[12px] font-display ${a.repair_cost > 0 ? 'text-red' : 'text-ash opacity-40'}`}>
+                      {a.repair_cost > 0 ? `-₹${a.repair_cost.toLocaleString()}` : "₹0.00"}
+                    </span>
+                    <span className="text-[10px] text-ash font-bold">{new Date(a.created_at).toLocaleDateString()}</span>
+                    <div>
+                      {a.pdf_url ? (
+                        <a href={a.pdf_url} target="_blank" className="text-[9px] tracking-[2px] text-navy border-2 border-navy/10 px-4 py-2 hover:bg-navy hover:text-void transition-all font-black uppercase cut-sm block text-center whitespace-nowrap">
+                          {a.fail_count === 0 ? 'Health Cert.' : 'Invoice'}
+                        </a>
+                      ) : (
+                        <span className="text-[8px] text-ash italic uppercase opacity-30">Generating...</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {!loadingHistory && audits.length === 0 && (
+                   <div className="p-20 text-center text-ash text-[12px] font-black uppercase tracking-[4px] italic opacity-40">No Audit History Identified.</div>
+                )}
+              </div>
+           </div>
         </div>
       </div>
     </div>
@@ -421,7 +481,7 @@ function MechanixTab() {
                                ? r === 'pass' ? 'bg-green text-void border-green' : 'bg-orange text-void border-orange'
                                : 'border-navy/10 text-ash hover:border-navy/30'
                            }`}>
-                           {r === 'repair' ? 'Settle' : r}
+                           {r === 'repair' ? 'NEEDS REPAIR' : r.toUpperCase()}
                          </button>
                        ))}
                     </div>
@@ -574,11 +634,17 @@ function ExpenseTab() {
 
 function InvestorsTab() {
   const [investors, setInvestors] = useState<any[]>([])
+  const [onboardings, setOnboardings] = useState<any[]>([])
   const [loading, setLoading]     = useState(true)
 
   const load = async () => {
-    try { const r = await adminAPI.getInvestors(); setInvestors(r.data) }
-    catch { toast.error('Failed to access Portfolio Registry') }
+    setLoading(true)
+    try { 
+      const [inv, onb] = await Promise.all([adminAPI.getInvestors(), adminAPI.getOnboardings()])
+      setInvestors(inv.data)
+      setOnboardings(onb.data)
+    }
+    catch { toast.error('Portfolio Access Error') }
     finally { setLoading(false) }
   }
   useEffect(() => { load() }, [])
@@ -588,52 +654,95 @@ function InvestorsTab() {
     catch { toast.error('Verification failed') }
   }
 
+  const approveOnboarding = async (id: string) => {
+    try { await adminAPI.approveOnboarding(id); toast.success('✓ Asset Onboarded to Fleet'); load() }
+    catch { toast.error('Onboarding failed') }
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="text-[10px] tracking-[4px] text-navy uppercase font-black mb-8 flex items-center gap-3">
-        <span className="w-10 h-px bg-green" /> Investor Portfolio CRM
-      </div>
-      <div className="bg-white border border-navy/10 shadow-2xl overflow-hidden">
-        <div className="hidden lg:grid grid-cols-6 px-10 py-5 bg-void border-b border-navy/10 text-[9px] tracking-[4px] text-ash uppercase font-black">
-          <span>Investor</span><span>Identity</span><span>Asset Count</span><span>Compliance</span><span>Pulse</span><span>Actions</span>
+    <div className="space-y-12">
+      {/* Onboarding Applications */}
+      <div>
+        <div className="text-[10px] tracking-[4px] text-navy uppercase font-black mb-8 flex items-center gap-3">
+          <span className="w-10 h-px bg-orange" /> PENDING ONBOARDING QUEUE
         </div>
-        <div className="max-h-[600px] overflow-y-auto">
-          {loading ? [1,2,3,4].map(i=>(
-            <div key={i} className="h-20 animate-pulse bg-void border-b border-navy/5 m-4" />
-          )) : investors.map((inv,i)=>(
-            <div key={i} className="flex flex-col lg:grid lg:grid-cols-6 px-6 md:px-10 py-6 md:py-8 border-b border-navy/5 items-start lg:items-center hover:bg-void/40 transition-all font-bold group gap-4 lg:gap-0">
-              <div className="flex flex-col">
-                <span className="text-[13px] text-navy uppercase font-black">{inv.name || 'Anonymous Partner'}</span>
-                <span className="lg:hidden text-[9px] text-ash font-mono mt-1">{inv.phone}</span>
+        <div className="bg-white border border-navy/10 shadow-2xl overflow-hidden">
+          <div className="hidden lg:grid grid-cols-6 px-10 py-5 bg-navy/5 border-b border-navy/10 text-[9px] tracking-[4px] text-ash uppercase font-black">
+            <span>Proposed Partner</span><span>Asset Details</span><span>Fee Status</span><span>Timestamp</span><span>Docs</span><span>Protocol</span>
+          </div>
+          <div className="max-h-[400px] overflow-y-auto">
+            {!loading && onboardings.filter(o=>o.payment_status==='paid').map((onb,i)=>(
+              <div key={onb.id || i} className="flex flex-col lg:grid lg:grid-cols-6 px-10 py-6 border-b border-navy/5 items-center hover:bg-void/40 transition-all font-bold group">
+                <div className="flex flex-col">
+                  <span className="text-[13px] text-navy uppercase font-black">{onb.name}</span>
+                  <span className="text-[9px] text-ash font-mono mt-1">{onb.phone}</span>
+                </div>
+                <span className="text-[11px] text-navy uppercase">{onb.vehicle}</span>
+                <span className="text-[9px] tracking-[2px] uppercase font-black px-4 py-1.5 border text-green border-green/30 bg-green/5 w-fit">₹5,000 PAID</span>
+                <span className="text-[10px] text-ash font-bold">{new Date(onb.created_at).toLocaleDateString()}</span>
+                <div className="flex gap-2">
+                  <div className="w-8 h-8 rounded-full bg-navy/5 flex items-center justify-center text-[10px] text-ash border border-navy/10">RC</div>
+                  <div className="w-8 h-8 rounded-full bg-navy/5 flex items-center justify-center text-[10px] text-ash border border-navy/10">KYC</div>
+                </div>
+                <button onClick={()=>approveOnboarding(onb.id)} className="text-[9px] tracking-[2px] text-white bg-green px-5 py-2 hover:bg-green-dim transition-all font-black uppercase cut-sm">
+                  INITIALIZE
+                </button>
               </div>
-              <span className="hidden lg:block text-[11px] text-ash font-mono">{inv.phone}</span>
-              <span className="text-[12px] text-navy font-display">{inv.vehicle_count} Strategic Assets</span>
-              <span className={`text-[10px] tracking-[2px] uppercase font-black px-4 py-1.5 border inline-block w-fit ${inv.kyc_verified?'text-green border-green/30 bg-green/5':'text-orange border-orange/30 bg-orange/5'}`}>
-                {inv.kyc_verified?'Verified':'Pending'}
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green shadow-[0_0_8px_rgba(34,197,94,.4)]"/>
-                <span className="text-[9px] text-green font-black uppercase tracking-widest">Active</span>
+            ))}
+            {!loading && onboardings.filter(o=>o.payment_status==='paid').length === 0 && (
+               <div className="p-10 text-center text-ash text-[10px] font-black uppercase opacity-40">No Paid Onboarding Requests Pending.</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Verified Investors */}
+      <div>
+        <div className="text-[10px] tracking-[4px] text-navy uppercase font-black mb-8 flex items-center gap-3">
+          <span className="w-10 h-px bg-green" /> ACTIVE PORTFOLIO REGISTRY
+        </div>
+        <div className="bg-white border border-navy/10 shadow-2xl overflow-hidden">
+          <div className="hidden lg:grid grid-cols-6 px-10 py-5 bg-navy/5 border-b border-navy/10 text-[9px] tracking-[4px] text-ash uppercase font-black">
+            <span>Investor</span><span>Identity</span><span>Asset Count</span><span>Compliance</span><span>Pulse</span><span>Actions</span>
+          </div>
+          <div className="max-h-[600px] overflow-y-auto">
+            {loading ? [1,2,3,4].map(i=>(
+              <div key={i} className="h-20 animate-pulse bg-void border-b border-navy/5 m-4" />
+            )) : investors.map((inv,i)=>(
+              <div key={inv.id || i} className="flex flex-col lg:grid lg:grid-cols-6 px-6 md:px-10 py-6 md:py-8 border-b border-navy/5 items-start lg:items-center hover:bg-void/40 transition-all font-bold group gap-4 lg:gap-0">
+                <div className="flex flex-col">
+                  <span className="text-[13px] text-navy uppercase font-black">{inv.name || 'Anonymous Partner'}</span>
+                  <span className="lg:hidden text-[9px] text-ash font-mono mt-1">{inv.phone}</span>
+                </div>
+                <span className="hidden lg:block text-[11px] text-ash font-mono">{inv.phone}</span>
+                <span className="text-[12px] text-navy font-display">{inv.vehicle_count} Assets</span>
+                <span className={`text-[10px] tracking-[2px] uppercase font-black px-4 py-1.5 border inline-block w-fit ${inv.kyc_verified?'text-green border-green/30 bg-green/5':'text-orange border-orange/30 bg-orange/5'}`}>
+                  {inv.kyc_verified?'Verified':'Pending'}
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green shadow-[0_0_8px_rgba(34,197,94,.4)]"/>
+                  <span className="text-[9px] text-green font-black uppercase tracking-widest">Active</span>
+                </div>
+                <div className="flex gap-2 w-full lg:w-auto">
+                  {!inv.kyc_verified && (
+                    <button onClick={()=>approve(inv.id)} className="w-full lg:w-auto text-[9px] tracking-[2px] text-green border-2 border-green/40 px-5 py-2 hover:bg-green hover:text-void transition-all font-black uppercase cut-sm text-center">
+                      Approve KYC
+                    </button>
+                  )}
+                  {inv.kyc_verified && (
+                    <div className="flex -space-x-2">
+                        {[1,2,3].map(j=><div key={j} className="w-8 h-8 rounded-full border-2 border-white bg-navy/5 flex items-center justify-center text-[10px] text-ash">📄</div>)}
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="flex gap-2 w-full lg:w-auto">
-                {!inv.kyc_verified && (
-                  <button onClick={()=>approve(inv.id)} className="w-full lg:w-auto text-[9px] tracking-[2px] text-green border-2 border-green/40 px-5 py-2 hover:bg-green hover:text-void transition-all font-black uppercase cut-sm text-center">
-                    Approve KYC
-                  </button>
-                )}
-                {inv.kyc_verified && (
-                   <div className="flex -space-x-2">
-                      {[1,2,3].map(j=><div key={j} className="w-8 h-8 rounded-full border-2 border-white bg-navy/5 flex items-center justify-center text-[10px] text-ash">📄</div>)}
-                   </div>
-                )}
+            ))}
+            {!loading && investors.length === 0 && (
+              <div className="p-20 text-center text-ash text-[12px] font-black uppercase tracking-[4px] italic opacity-40">
+                No Onboarded Capital Partners Found.
               </div>
-            </div>
-          ))}
-          {!loading && investors.length === 0 && (
-             <div className="p-20 text-center text-ash text-[12px] font-black uppercase tracking-[4px] italic opacity-40">
-               No Onboarded Capital Partners Found.
-             </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>

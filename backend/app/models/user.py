@@ -173,6 +173,7 @@ class Onboarding(Base):
     agreement_accepted  = Column(Boolean, default=False)
     agreement_ip        = Column(String(50), nullable=True)
     agreement_timestamp = Column(DateTime, nullable=True)
+    agreement_signature = Column(Text, nullable=True)  # Store Base64 or S3 URL
     agreement_url       = Column(String(500), nullable=True)
     payment_order_id    = Column(String(200), nullable=True)
     payment_status      = Column(Enum("pending","paid","failed", name="payment_status"), default="pending")

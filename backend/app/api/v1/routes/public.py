@@ -37,6 +37,7 @@ class OnboardingCreate(BaseModel):
     full_name: str; phone: str; email: str
     vehicle_make: str; vehicle_model: str; vehicle_year: int
     reg_number: str; asset_value: float; agreement_accepted: bool
+    signature: Optional[str] = None  # Base64 data URL
 
 @router.post("/onboarding")
 def submit_onboarding(req: OnboardingCreate, request: Request, db: Session = Depends(get_db)):
@@ -48,6 +49,7 @@ def submit_onboarding(req: OnboardingCreate, request: Request, db: Session = Dep
         vehicle_make=req.vehicle_make, vehicle_model=req.vehicle_model,
         vehicle_year=req.vehicle_year, reg_number=req.reg_number,
         asset_value=req.asset_value, agreement_accepted=True,
+        agreement_signature=req.signature,
         agreement_ip=request.client.host,
         agreement_timestamp=datetime.utcnow(),
     )

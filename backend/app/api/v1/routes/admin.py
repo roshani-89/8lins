@@ -7,7 +7,7 @@ from typing import Optional
 
 from app.core.database import get_db
 from app.core.security import require_admin
-from app.models.user import (User, Vehicle, Trip, Payout, Ticket, TicketReply, Lead, MechanixAudit)
+from app.models.user import (User, Vehicle, Trip, Payout, Ticket, TicketReply, Lead, MechanixAudit, Onboarding)
 
 router = APIRouter()
 
@@ -23,14 +23,16 @@ def get_stats(db: Session = Depends(get_db), _=Depends(require_admin)):
     total_investors= db.query(User).filter(User.role == "investor").count()
     pending_kyc    = db.query(User).filter(User.role == "investor", User.kyc_verified == False).count()
     open_tickets   = db.query(Ticket).filter(Ticket.status.in_(["open","in_progress"])).count()
+    pending_onboarding = db.query(Onboarding).filter(Onboarding.payment_status == "paid").count()
 
     return {
         "total_gross_revenue": total_gross,
-        "platform_cut": platform_cut,
+        "platform_cut": platform_cut, # Strategic 30% Corporate Cut
         "active_vehicles": active_vehicles,
         "total_investors": total_investors,
         "pending_kyc": pending_kyc,
         "open_tickets": open_tickets,
+        "pending_onboarding": pending_onboarding,
         "today_trips": 0,
     }
 
@@ -42,13 +44,43 @@ def get_fleet(db: Session = Depends(get_db), _=Depends(require_admin)):
              "owner_id":v.owner_id,"status":v.status,"health_score":v.health_score,
              "total_trips":v.total_trips,"guest_rating":v.guest_rating} for v in vehicles]
 
-# ── Investors ───────────────────────────────────────────────────────────
+# ── Investors & Onboarding ──────────────────────────────────────────────
 @router.get("/investors")
 def get_investors(db: Session = Depends(get_db), _=Depends(require_admin)):
     investors = db.query(User).filter(User.role == "investor").all()
     return [{"id":u.id,"phone":u.phone,"name":u.name,"email":u.email,
              "kyc_verified":u.kyc_verified,"created_at":str(u.created_at),
+             "onboarding_fee_paid": True, # Users in table already finished flow usually
              "vehicle_count": db.query(Vehicle).filter(Vehicle.owner_id == u.id).count()} for u in investors]
+
+@router.get("/onboardings")
+def get_onboardings(db: Session = Depends(get_db), _=Depends(require_admin)):
+    onboardings = db.query(Onboarding).order_by(Onboarding.created_at.desc()).all()
+    return [{"id":o.id,"name":o.full_name,"phone":o.phone,"email":o.email,
+             "vehicle": f"{o.vehicle_make} {o.vehicle_model} ({o.reg_number})",
+             "payment_status": o.payment_status,"created_at": str(o.created_at)} for o in onboardings]
+
+@router.post("/onboardings/{id}/approve")
+def approve_onboarding(id: str, db: Session = Depends(get_db), _=Depends(require_admin)):
+    onboarding = db.query(Onboarding).filter(Onboarding.id == id).first()
+    if not onboarding: raise HTTPException(404, "Onboarding session not found")
+    
+    # Check if user already exists
+    user = db.query(User).filter(User.phone == onboarding.phone).first()
+    if not user:
+        user = User(phone=onboarding.phone, name=onboarding.full_name, email=onboarding.email, role="investor")
+        db.add(user); db.flush()
+    
+    # Create vehicle
+    vehicle = Vehicle(
+        owner_id=user.id, make=onboarding.vehicle_make, model=onboarding.vehicle_model,
+        year=onboarding.vehicle_year, registration_number=onboarding.reg_number,
+        asset_value=onboarding.asset_value, status="audit_pending",
+        rc_s3_key=None, insurance_s3_key=None, # In production these would map from onboarding
+        agreement_url=onboarding.agreement_url
+    )
+    db.add(vehicle); db.commit()
+    return {"message": "Onboarding converted to Active Portfolio Asset"}
 
 @router.post("/investors/{user_id}/approve-kyc")
 def approve_kyc(user_id: str, db: Session = Depends(get_db), _=Depends(require_admin)):

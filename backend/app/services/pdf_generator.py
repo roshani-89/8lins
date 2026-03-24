@@ -136,12 +136,30 @@ def generate_agreement_pdf(onboarding) -> tuple:
         Spacer(1, 24),
         Paragraph("<b>DIGITAL EXECUTION STAMP (CLICKWRAP)</b>", title_style),
         Paragraph(f"This document was digitally executed and accepted via the 8-Lines Investor Portal.", body_style),
+    ]
+
+    # Add Signature if exists
+    if onboarding.agreement_signature:
+        try:
+            import base64
+            from reportlab.platypus import Image
+            # Data URL format: data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...
+            header, encoded = onboarding.agreement_signature.split(",", 1)
+            img_data = base64.b64decode(encoded)
+            img_buf = io.BytesIO(img_data)
+            elements.append(Paragraph("<b>INVESTOR SIGNATURE:</b>", body_style))
+            elements.append(Image(img_buf, width=2*inch, height=0.5*inch))
+            elements.append(Spacer(1, 12))
+        except Exception as e:
+            print(f"Failed to embed signature in PDF: {e}")
+
+    elements.extend([
         Paragraph(f"<b>IP ADDRESS:</b> {onboarding.agreement_ip}", stamp_style),
         Paragraph(f"<b>TIMESTAMP:</b> {onboarding.agreement_timestamp.strftime('%Y-%m-%d %H:%M:%S')} UTC", stamp_style),
         Paragraph(f"<b>LEGAL VALIDITY:</b> Indian IT Act 2000, Section 10A (Validity of contracts formed through electronic means).", body_style),
         Spacer(1, 40),
-        Paragraph("8-Lines Group · Corporate Mobility Infrastructure · Bengaluru", sub_style := ParagraphStyle("footer", fontSize=8, textColor=GREY, alignment=1)),
-    ]
+        Paragraph("8-Lines Group · Corporate Mobility Infrastructure · Bengaluru", ParagraphStyle("footer", fontSize=8, textColor=GREY, alignment=1)),
+    ])
 
     doc.build(elements)
     content = buf.getvalue()

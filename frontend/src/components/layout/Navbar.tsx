@@ -11,7 +11,7 @@ const NAV_LINKS = [
   { href: '/corporate', label: 'B2B Fleet'  },
 ]
 
-export default function Navbar() {
+export default function Navbar({ theme = 'dark' }: { theme?: 'light' | 'dark' }) {
   const path     = usePathname()
   const { user, logout, loadUser } = useAuthStore()
   const [scrolled, setScrolled] = useState(false)

@@ -67,8 +67,8 @@ function ROICalc() {
         {/* Header */}
         <div className="flex items-center justify-between px-8 py-5 bg-navy border-b-0 relative">
           <div>
-            <div className="text-[9px] tracking-[5px] text-orange uppercase font-black mb-1">LIVE CALCULATOR</div>
-            <div className="font-display text-xl text-white uppercase tracking-widest">YIELD PREDICTOR</div>
+            <div className="text-[10px] tracking-widest text-orange uppercase font-bold mb-1">LIVE CALCULATOR</div>
+            <div className="font-sans text-lg text-white font-bold uppercase tracking-tight">YIELD PREDICTOR</div>
           </div>
           <div className="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-sm">
             <span className="w-2 h-2 rounded-full bg-green animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
@@ -80,8 +80,8 @@ function ROICalc() {
         <div className="p-8 space-y-8 border-b border-navy/5 bg-navy/[0.01]">
           <div>
             <div className="flex justify-between items-center mb-4">
-              <span className="text-[10px] tracking-[4px] text-navy/40 uppercase font-black">Asset Value</span>
-              <span className="font-display text-3xl text-navy">₹{asset.toLocaleString('en-IN')}</span>
+              <span className="text-[10px] tracking-widest text-navy/40 uppercase font-bold">Asset Value</span>
+              <span className="font-sans text-3xl font-bold text-navy tracking-tight">₹{asset.toLocaleString('en-IN')}</span>
             </div>
             <div className="relative h-2 bg-navy/5 rounded-full">
               <div className="absolute h-full bg-gradient-to-r from-orange/50 to-orange rounded-full transition-all" style={{width:`${((asset-500000)/(3000000-500000))*100}%`}} />
@@ -92,8 +92,8 @@ function ROICalc() {
 
           <div>
             <div className="flex justify-between items-center mb-4">
-              <span className="text-[10px] tracking-[4px] text-navy/40 uppercase font-black">Deployment Days / Month</span>
-              <span className="font-display text-3xl text-navy">{days} <span className="text-[14px] text-navy/40">days</span></span>
+              <span className="text-[10px] tracking-widest text-navy/40 uppercase font-bold">Deployment Days / Month</span>
+              <span className="font-sans text-3xl font-bold text-navy tracking-tight">{days} <span className="text-sm text-navy/40">days</span></span>
             </div>
             <div className="relative h-2 bg-navy/5 rounded-full">
               <div className="absolute h-full bg-gradient-to-r from-orange/50 to-orange rounded-full transition-all" style={{width:`${((days-8)/(28-8))*100}%`}} />
@@ -112,8 +112,8 @@ function ROICalc() {
             {l:'YOUR NET PROFIT', v:`₹${net.toLocaleString('en-IN')}`, c:'text-green font-black'},
           ].map(r => (
             <div key={r.l} className="p-6 bg-white hover:bg-navy/[0.01] transition-colors group">
-              <div className="text-[9px] text-navy/30 mb-2 uppercase tracking-[3px] font-black">{r.l}</div>
-              <div className={`font-display text-2xl ${r.c} group-hover:scale-105 transition-transform origin-left`}>{r.v}</div>
+              <div className="text-[10px] text-navy/30 mb-2 uppercase tracking-widest font-bold">{r.l}</div>
+              <div className={`font-sans text-2xl font-bold tracking-tight ${r.c} group-hover:scale-105 transition-transform origin-left`}>{r.v}</div>
             </div>
           ))}
         </div>
@@ -121,12 +121,12 @@ function ROICalc() {
         {/* Annual Result */}
         <div className="p-8 bg-navy flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div>
-            <div className="text-[9px] tracking-[4px] text-white/30 uppercase font-black mb-2">Annualised Net Yield</div>
-            <div className="font-display text-5xl text-white tracking-tight">₹{annual.toLocaleString('en-IN')}</div>
+            <div className="text-[10px] tracking-widest text-white/30 uppercase font-bold mb-2">Annualised Net Yield</div>
+            <div className="font-sans text-5xl font-bold text-white tracking-tighter">₹{annual.toLocaleString('en-IN')}</div>
           </div>
           <div className="text-center sm:text-right">
-            <div className="font-display text-7xl font-black" style={{color: roiColor, textShadow:`0 0 40px ${roiColor}40`}}>{roi}%</div>
-            <div className="text-[9px] tracking-[4px] text-white/30 uppercase font-black mt-1">NET ROI / YEAR</div>
+            <div className="font-sans text-7xl font-bold tracking-tighter" style={{color: roiColor, textShadow:`0 0 40px ${roiColor}40`}}>{roi}%</div>
+            <div className="text-[10px] tracking-widest text-white/30 uppercase font-bold mt-1">NET ROI / YEAR</div>
           </div>
         </div>
       </div>
@@ -168,6 +168,7 @@ const schema = z.object({
 export default function InvestorPage() {
   const [loading, setLoading] = useState(false)
   const { register, handleSubmit, formState: { errors }, reset } = useForm({ resolver: zodResolver(schema) })
+  const roi = 24
   useReveal()
 
   const onSubmit = async (data: any) => {
@@ -230,15 +231,14 @@ export default function InvestorPage() {
             <div className="rv-l">
               <div className="flex items-center gap-4 mb-10">
                 <div className="flex items-center gap-2 bg-green/10 border border-green/20 px-4 py-2 rounded-sm">
-                  <span className="w-2 h-2 rounded-full bg-green animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
-                  <span className="text-[10px] tracking-[4px] text-green uppercase font-black">PHASE IV OPEN</span>
+                  <span className="w-2 h-2 rounded-full bg-green animate-pulse shadow-glow-green" />
+                  <span className="text-xs font-semibold text-green tracking-wide uppercase">PHASE IV OPEN</span>
                 </div>
-                <span className="text-[10px] tracking-[3px] text-white/20 uppercase font-black">Bengaluru Hub Alpha</span>
+                <span className="text-xs font-semibold text-white/20 tracking-wide uppercase">Bengaluru Hub Alpha</span>
               </div>
 
-              <h1 className="font-display text-[clamp(60px,9vw,130px)] leading-[0.85] text-white mb-6 uppercase">
-                YOUR CAR.<br/>
-                <span className="text-orange">PASSIVE</span><br/>
+              <h1 className="font-sans text-[clamp(45px,7vw,100px)] font-bold leading-tight text-white mb-8 uppercase tracking-tighter">
+                YOUR CAR. <span className="text-orange">PASSIVE</span><br/>
                 <span style={{WebkitTextStroke: '1px rgba(255,255,255,0.2)', color:'transparent'}}>INCOME.</span>
               </h1>
 
@@ -247,10 +247,10 @@ export default function InvestorPage() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/investor/onboard" className="group relative overflow-hidden bg-orange text-white px-10 py-5 font-display text-xl tracking-[4px] uppercase font-black transition-all hover:shadow-[0_0_40px_rgba(248,147,31,0.4)] metallic-shine" style={{clipPath:'polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)'}}>
+                <Link href="/investor/onboard" className="group relative overflow-hidden bg-orange text-white px-10 py-5 font-sans text-lg tracking-widest uppercase font-bold transition-all hover:shadow-[0_0_40px_rgba(248,147,31,0.4)] metallic-shine" style={{clipPath:'polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)'}}>
                   DEPLOY ASSET →
                 </Link>
-                <a href="#calc" className="border border-white/10 text-white/60 px-10 py-5 font-display text-xl tracking-[4px] uppercase font-black hover:border-white/30 hover:text-white transition-all" style={{clipPath:'polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)'}}>
+                <a href="#calc" className="border border-white/10 text-white/60 px-10 py-5 font-sans text-lg tracking-widest uppercase font-bold hover:border-white/30 hover:text-white transition-all" style={{clipPath:'polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)'}}>
                   YIELD CALC
                 </a>
               </div>
@@ -259,8 +259,8 @@ export default function InvestorPage() {
               <div className="grid grid-cols-3 gap-px mt-14 border border-white/5 overflow-hidden" style={{clipPath:'polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)'}}>
                 {[{n:'70%',l:'Net Yield Split'},{n:'₹4.8L',l:'Avg. Annual'},{n:'92%',l:'Utilisation'}].map(s=>(
                   <div key={s.l} className="bg-white/[0.03] p-5 text-center border-r border-white/5 last:border-0 hover:bg-white/[0.06] transition-colors">
-                    <div className="font-display text-3xl text-orange mb-1">{s.n}</div>
-                    <div className="text-[9px] text-white/30 uppercase tracking-[3px] font-black">{s.l}</div>
+                    <div className="font-sans text-3xl font-bold text-orange mb-1">{s.n}</div>
+                    <div className="text-[10px] text-white/30 uppercase tracking-widest font-bold">{s.l}</div>
                   </div>
                 ))}
               </div>
@@ -302,7 +302,7 @@ export default function InvestorPage() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-px bg-navy/5 border border-navy/5 overflow-hidden" style={{clipPath:'polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)'}}>
             {STATS.map((s, i) => (
               <div key={s.l} className={`rv rv-d${Math.min(i+1,4)} bg-white p-8 md:p-10 text-center hover:bg-navy hover:text-white group transition-all duration-500 cursor-default`}>
-                <div className="font-display text-4xl md:text-5xl text-navy group-hover:text-orange mb-3 transition-colors">{s.n}</div>
+                <div className="font-sans font-bold tracking-tight">{s.n}</div>
                 <div className="text-[9px] tracking-[3px] text-navy/30 group-hover:text-white/40 uppercase font-black transition-colors">{s.l}</div>
               </div>
             ))}
@@ -318,7 +318,7 @@ export default function InvestorPage() {
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="rv text-center mb-20">
             <div className="text-[10px] tracking-[8px] text-orange uppercase font-black mb-6">ONBOARDING PROTOCOL</div>
-            <h2 className="font-display text-[clamp(44px,6vw,90px)] text-white leading-none uppercase">
+            <h2 className="font-sans text-3xl md:text-4xl text-white font-bold tracking-tight mb-8 uppercase">
               4 STEPS TO<br/><span className="text-green">PASSIVE YIELD.</span>
             </h2>
           </div>
@@ -331,10 +331,10 @@ export default function InvestorPage() {
               {n:'04', icon:'💰', t:'Node Activation',      d:'Your car goes live. Earn institutional-grade 70% net yield from day one.', c:'border-green/20'},
             ].map((s, i) => (
               <div key={s.n} className={`rv rv-d${i+1} group relative p-8 border ${s.c} bg-white/[0.03] hover:bg-white/[0.07] transition-all duration-500 hover:-translate-y-2`} style={{clipPath:'polygon(15px 0,100% 0,100% calc(100% - 15px),calc(100% - 15px) 100%,0 100%,0 15px)'}}>
-                <div className="absolute top-4 right-5 font-display text-8xl text-white/[0.03] group-hover:text-white/[0.06] transition-colors select-none">{s.n}</div>
+                <div className="absolute top-4 right-5 font-sans text-8xl font-bold text-white/[0.03] group-hover:text-white/[0.06] transition-colors select-none">{s.n}</div>
                 <div className="text-4xl mb-8">{s.icon}</div>
                 <div className="text-[10px] tracking-[4px] text-orange uppercase font-black mb-3">STEP {s.n}</div>
-                <div className="font-display text-2xl text-white uppercase mb-4 leading-tight">{s.t}</div>
+                <div className="font-sans text-2xl text-white font-bold tracking-tight mb-8 uppercase">{s.t}</div>
                 <p className="text-[13px] text-white/30 font-medium leading-relaxed">{s.d}</p>
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
               </div>
@@ -349,7 +349,7 @@ export default function InvestorPage() {
         <div className="max-w-7xl mx-auto">
           <div className="rv text-center mb-20">
             <div className="text-[10px] tracking-[8px] text-orange uppercase font-black mb-6">ROI ARCHITECTURE</div>
-            <h2 className="font-display text-[clamp(44px,6vw,90px)] text-navy leading-none uppercase">
+            <h2 className="font-sans text-3xl md:text-4xl text-navy font-bold tracking-tight mb-8 uppercase">
               PROJECT YOUR<br/><span className="text-green">NET YIELD.</span>
             </h2>
             <p className="text-[14px] text-navy/40 mt-6 max-w-xl mx-auto uppercase tracking-wider font-medium">Adjust the sliders below. See exactly how much 70% feels like — in real rupees.</p>
@@ -367,7 +367,7 @@ export default function InvestorPage() {
             <div className="text-[10px] tracking-[8px] text-orange uppercase font-black mb-6 flex items-center gap-5">
               <span className="w-12 h-px bg-orange/30" /> BENCHMARK COMPARISON
             </div>
-            <h2 className="font-display text-[clamp(40px,5vw,80px)] text-navy leading-none uppercase">
+            <h2 className="font-sans text-xl text-navy font-bold tracking-tight mb-8 uppercase">
               WHY 8-LINES<br/><span className="text-green">HITS DIFFERENT.</span>
             </h2>
           </div>
@@ -409,7 +409,7 @@ export default function InvestorPage() {
             <div className="text-[10px] tracking-[8px] text-green uppercase font-black mb-8 flex items-center gap-5">
               <span className="w-12 h-px bg-green/40" /> ASSET PROTECTION
             </div>
-            <h2 className="font-display text-[clamp(40px,5vw,80px)] text-white leading-[0.9] uppercase mb-10">
+            <h2 className="font-sans text-[clamp(40px,5vw,80px)] text-white font-bold tracking-tight mb-10 uppercase">
               THE <span className="text-green">MECHANIX PRO</span> ADVANTAGE.
             </h2>
             <p className="text-[15px] text-white/40 mb-12 font-medium leading-relaxed max-w-xl uppercase tracking-wider">
@@ -430,7 +430,7 @@ export default function InvestorPage() {
                 </div>
               ))}
             </div>
-            <Link href="/investor/onboard" className="inline-flex items-center gap-4 bg-green text-white px-10 py-5 font-display text-lg tracking-[4px] uppercase font-black hover:bg-green/90 transition-all hover:shadow-[0_0_30px_rgba(34,197,94,0.3)]" style={{clipPath:'polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)'}}>
+            <Link href="/investor/onboard" className="inline-flex items-center gap-4 bg-green text-white px-10 py-5 font-sans text-lg tracking-widest uppercase font-bold" style={{clipPath:'polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)'}}>
               START DEPLOYMENT →
             </Link>
           </div>
@@ -439,7 +439,7 @@ export default function InvestorPage() {
             <div className="absolute -inset-10 bg-green/10 blur-[80px] rounded-full pointer-events-none" />
             <div className="relative bg-white/[0.04] border border-white/10 p-8 md:p-10" style={{clipPath:'polygon(20px 0,100% 0,100% calc(100% - 20px),calc(100% - 20px) 100%,0 100%,0 20px)'}}>
               <div className="flex items-center gap-5 mb-10">
-                <div className="w-16 h-16 bg-green/10 border border-green/20 flex items-center justify-center font-display text-3xl text-green">22</div>
+                <div className="w-16 h-16 bg-green/10 border border-green/20 flex items-center justify-center font-sans text-3xl font-bold text-green">22</div>
                 <div>
                   <div className="text-[11px] tracking-[4px] text-white uppercase font-black mb-1">Audit Protocol v4.0</div>
                   <div className="text-[9px] tracking-[3px] text-green uppercase font-black">ZERO-DEFECT CERTIFIED</div>
@@ -474,7 +474,7 @@ export default function InvestorPage() {
               <div className="text-[10px] tracking-[8px] text-orange uppercase font-black mb-8 flex items-center gap-5">
                 <span className="w-12 h-px bg-orange/30" /> BEGIN PROTOCOL
               </div>
-              <h2 className="font-display text-[clamp(40px,5vw,80px)] text-navy leading-[0.9] uppercase mb-10">
+              <h2 className="font-sans text-[clamp(40px,5vw,80px)] text-navy font-bold tracking-tight mb-10 uppercase">
                 REGISTER<br/><span className="text-orange">YOUR ASSET.</span>
               </h2>
               <p className="text-[14px] text-navy/40 font-medium leading-relaxed mb-10 uppercase tracking-wider">
@@ -516,7 +516,7 @@ export default function InvestorPage() {
                 
                 <div className="relative z-10 mb-8">
                   <div className="text-[9px] tracking-[4px] text-white/20 uppercase font-black mb-3">// SECURE PROTOCOL FORM</div>
-                  <div className="font-display text-3xl text-white uppercase">Asset Enquiry</div>
+                  <div className="font-sans text-3xl font-bold text-white uppercase tracking-tight">Asset Enquiry</div>
                 </div>
                 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 relative z-10">
@@ -557,7 +557,7 @@ export default function InvestorPage() {
                   </div>
 
                   <button type="submit" disabled={loading}
-                    className="w-full bg-orange text-white py-5 font-display text-2xl tracking-[5px] uppercase font-black hover:bg-orange/90 hover:shadow-[0_0_40px_rgba(248,147,31,0.3)] transition-all disabled:opacity-50 group" style={{clipPath:'polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)'}}>
+                    className="w-full bg-orange text-white py-5 font-sans text-2xl tracking-widest uppercase font-bold hover:bg-orange/90 hover:shadow-[0_0_40px_rgba(248,147,31,0.4)] transition-all disabled:opacity-50 group" style={{clipPath:'polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)'}}>
                     <span className="inline-flex items-center gap-4">
                       {loading ? 'INITIALIZING...' : 'SUBMIT ENQUIRY →'}
                     </span>
@@ -577,25 +577,111 @@ export default function InvestorPage() {
         </div>
       </section>
 
+      {/* ── HUB OPERATIONS (Operations Center) ── */}
+      <section id="hub" className="py-24 md:py-40 px-6 md:px-10 bg-white relative overflow-hidden border-t border-navy/5">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-navy/5 to-transparent" />
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 lg:gap-32 items-center">
+            <div className="rv-l">
+              <div className="text-[10px] tracking-[6px] text-green uppercase mb-10 flex items-center gap-5 font-black">
+                <span className="w-12 h-px bg-green/40" /> COMMAND INFRASTRUCTURE
+              </div>
+              <h2 className="font-sans text-[clamp(40px,5vw,72px)] leading-[0.9] text-navy mb-12 uppercase font-bold">
+                MANGAMMANAPALYA<br /><span className="text-green">HUB ALPHA.</span>
+              </h2>
+              <p className="text-[15px] md:text-[17px] leading-[1.8] text-ash/70 mb-12 font-medium uppercase tracking-widest">
+                Our centralized operations compound handles vehicle intake, 22-point digitization, and institutional dispatch. Every asset in the 8-Lines ecosystem is processed through this high-security protocol.
+              </p>
+              <div className="space-y-6">
+                {[
+                  { l: 'GEOLOCATION', v: 'Mangammanapalya, Bengaluru 560068' },
+                  { l: 'HUB PROTOCOL', v: '24×7 Secure Compound · Biometric Access' },
+                  { l: 'NODE CAPACITY', v: '15 Full-Size Assets · Active Expansion' },
+                  { l: 'AUDIT BAY', v: 'MECHANIX PRO Diagnostic Station' },
+                ].map(r => (
+                  <div key={r.l} className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-2 sm:gap-6 border-b border-navy/5 pb-5 group transition-colors hover:border-green/20">
+                    <span className="text-[9px] tracking-[3px] text-green uppercase w-auto sm:w-32 shrink-0 font-black group-hover:text-orange transition-colors">{r.l}</span>
+                    <span className="text-[12px] text-navy font-black uppercase tracking-tight">{r.v}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rv-r relative">
+              <div className="absolute -inset-10 bg-green/5 blur-3xl rounded-full opacity-30 pointer-events-none" />
+              <div className="h-64 sm:h-96 bg-navy flex items-center justify-center relative overflow-hidden cut-lg shadow-2xl">
+                <div className="absolute inset-0 carbon-fiber opacity-10 pointer-events-none" />
+                <div className="text-center relative z-10">
+                  <div className="text-6xl lg:text-8xl mb-6">📍</div>
+                  <div className="text-[12px] text-white mb-2 uppercase font-black tracking-[4px]">HUB ALPHA // SECTOR-1</div>
+                  <div className="text-[9px] text-white/40 font-black uppercase tracking-widest ">Audit & Deployment Center</div>
+                </div>
+                <div className="absolute bottom-6 left-6 right-6 pb-4 border-b border-white/10">
+                   <div className="flex items-center gap-3 text-[10px] text-white font-black uppercase tracking-[1px]">
+                     <span className="w-2 h-2 bg-green rounded-full animate-pulse shadow-glow-green" /> OPERATIONAL · SECURE DATA LINK
+                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── EXECUTIVE LEADERSHIP (Trust Center) ── */}
+      <section className="py-24 md:py-40 px-6 md:px-10 bg-void relative overflow-hidden">
+        <div className="absolute inset-0 carbon-fiber opacity-[0.01] pointer-events-none" />
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="rv mb-20 text-center md:text-left">
+            <div className="text-[10px] tracking-[8px] text-orange uppercase mb-8 flex items-center justify-center md:justify-start gap-5 font-black">
+              <span className="w-12 h-px bg-orange/40" /> EXECUTIVE BOARD
+            </div>
+            <h2 className="font-sans text-[clamp(44px,6vw,90px)] leading-[0.9] text-navy uppercase font-black">
+              THE CORE<br /><span className="text-orange">DIRECTORATE.</span>
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[
+              { n: 'Fardeen', r: 'Chief Executive Officer', i: 'F', d: 'Vision & Investor Relationships. Driving 8-Lines from idea to institution.' },
+              { n: 'Numer', r: 'Chief Financial Officer', i: 'N', d: 'Financial Architecture & Payout Engine. Every rupee accounted for.' },
+              { n: 'Junaid', r: 'Head of Operations', i: 'J', d: 'Fleet Deployment & Hub Logistics. The machine that keeps the wheels turning.' },
+              { n: 'Afnan Sabil', r: 'Head of Sales', i: 'A', d: 'Corporate Pipeline & B2B Partnerships. The expansion engine.' },
+            ].map((m, i) => (
+              <div key={m.n} className={`rv rv-d${i + 1} bg-white border border-navy/10 hover:border-orange/30 transition-all duration-700 p-10 group hover:-translate-y-4 hover:shadow-2xl cut-md shadow-sm`}>
+                <div className="w-16 h-16 bg-navy border border-white/5 flex items-center justify-center font-sans text-3xl text-white mb-8 group-hover:bg-orange transition-all duration-500 shadow-xl relative overflow-hidden">
+                  <div className="absolute inset-0 carbon-fiber opacity-20" />
+                  <span className="relative z-10">{m.i}</span>
+                </div>
+                <div className="font-sans text-xl tracking-[1px] text-navy mb-2 uppercase font-bold">{m.n}</div>
+                <div className="text-[9px] tracking-[3px] text-orange uppercase mb-6 font-black">{m.r}</div>
+                <p className="text-[12px] leading-[1.8] text-ash/70 font-medium uppercase tracking-wider">{m.d}</p>
+                <div className="mt-8 pt-6 border-t border-navy/5 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="text-[9px] tracking-[2px] text-navy font-black">ENCRYPTED PROTOCOL</div>
+                  <div className="w-1.5 h-1.5 bg-green rounded-full shadow-glow-green" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── BIG CTA ──────────────────────────────── */}
       <section className="bg-navy py-24 md:py-32 px-6 md:px-10 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none opacity-5" style={{backgroundImage:`radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,backgroundSize:'50px 50px'}} />
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
-          <div className="font-display text-[30vw] text-white/[0.02] select-none uppercase font-black leading-none">70%</div>
+          <div className="font-sans text-[25vw] font-bold text-white/[0.02] select-none uppercase leading-none">{roi}%</div>
         </div>
         <div className="relative z-10 max-w-7xl mx-auto text-center rv">
           <div className="text-[10px] tracking-[10px] text-orange uppercase font-black mb-8">FINAL HANDSHAKE</div>
-          <h2 className="font-display text-[clamp(54px,10vw,140px)] text-white leading-[0.85] uppercase mb-12">
+          <h2 className="font-sans text-[clamp(50px,8vw,120px)] text-white font-bold tracking-tighter mb-12 uppercase">
             READY TO<br/><span className="text-orange">DEPLOY?</span>
           </h2>
           <p className="text-[14px] text-white/30 max-w-xl mx-auto mb-14 font-medium uppercase tracking-widest">
             Bengaluru South is live. Drop your car in, earn 18-24% net ROI. It&apos;s that simple.
           </p>
           <div className="flex flex-col sm:flex-row gap-5 justify-center">
-            <Link href="/investor/onboard" className="bg-orange text-white px-14 py-6 font-display text-2xl tracking-[6px] uppercase font-black hover:shadow-[0_0_50px_rgba(248,147,31,0.4)] hover:bg-orange/90 transition-all" style={{clipPath:'polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)'}}>
+            <Link href="/investor/onboard" className="bg-orange text-white px-14 py-6 font-sans text-2xl tracking-widest uppercase font-bold" style={{clipPath:'polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)'}}>
               START ONBOARDING →
             </Link>
-            <a href="#calc" className="border border-white/10 text-white/60 px-14 py-6 font-display text-2xl tracking-[6px] uppercase font-black hover:border-white/30 hover:text-white transition-all" style={{clipPath:'polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)'}}>
+            <a href="#calc" className="border border-white/10 text-white/60 px-14 py-6 font-sans text-2xl tracking-widest uppercase font-bold" style={{clipPath:'polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)'}}>
               CALCULATE ROI
             </a>
           </div>

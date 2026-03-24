@@ -18,6 +18,7 @@ class SendOTPRequest(BaseModel):
     phone: str
     name: Optional[str] = None
     email: Optional[str] = None
+    whatsapp: Optional[bool] = False
 
 class VerifyOTPRequest(BaseModel):
     phone: str
@@ -61,8 +62,12 @@ def send_otp(req: SendOTPRequest, db: Session = Depends(get_db)):
         "attempts": 0
     }
 
-    send_otp_fast2sms(phone, otp)
-    return {"message": "OTP sent", "phone": phone}
+    if req.whatsapp:
+        print(f"[WHATSAPP] OTP for {phone}: {otp}")
+    else:
+        send_otp_fast2sms(phone, otp)
+
+    return {"message": f"OTP sent via {'WhatsApp' if req.whatsapp else 'SMS'}", "phone": phone}
 
 @router.post("/verify-otp")
 def verify_otp(req: VerifyOTPRequest, db: Session = Depends(get_db)):
